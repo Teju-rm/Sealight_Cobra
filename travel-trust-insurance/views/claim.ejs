@@ -1,0 +1,92 @@
+<%- include('partials/header', { title: 'File a Claim', navActive: '' }) %>
+
+  <section class="page-hero">
+    <div class="container">
+      <h1>File a Claim</h1>
+      <p class="page-subtitle">We're here to help you through the claims process. Please provide the details below.</p>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container">
+      <div class="form-page-layout">
+        <div class="form-card">
+          <h2>Submit Your Claim</h2>
+          <form id="claimForm">
+            <div class="form-row two-cols">
+              <div class="form-group">
+                <label for="fullName">Full Name <span class="required">*</span></label>
+                <input type="text" id="fullName" name="fullName" placeholder="John Doe" required>
+              </div>
+              <div class="form-group">
+                <label for="policyNumber">Policy Number <span class="required">*</span></label>
+                <input type="text" id="policyNumber" name="policyNumber" placeholder="POL-123456" required>
+              </div>
+            </div>
+
+            <div class="form-row two-cols">
+              <div class="form-group">
+                <label for="email">Email Address <span class="required">*</span></label>
+                <input type="email" id="email" name="email" placeholder="you@example.com" required>
+              </div>
+              <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567">
+              </div>
+            </div>
+
+            <div class="form-row two-cols">
+              <div class="form-group">
+                <label for="incidentDate">Date of Incident</label>
+                <input type="date" id="incidentDate" name="incidentDate">
+              </div>
+              <div class="form-group">
+                <label for="claimType">Claim Type</label>
+                <select id="claimType" name="claimType">
+                  <option value="">Select claim type...</option>
+                  <option value="Auto">Auto</option>
+                  <option value="Home">Home</option>
+                  <option value="Renters">Renters</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Life">Life</option>
+                  <option value="Business">Business</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="description">Description of Incident <span class="required">*</span></label>
+              <textarea id="description" name="description" placeholder="Please describe what happened in detail..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-red btn-full">Submit Claim</button>
+          </form>
+          <div id="claimResponse" class="response-area"></div>
+        </div>
+
+        <div class="form-sidebar">
+          <div class="sidebar-card">
+            <i class="fas fa-file-invoice"></i>
+            <h4>What to expect</h4>
+            <p>After you submit your claim, a claims representative will contact you within 24 hours to guide you through the next steps.</p>
+            <ul>
+              <li><i class="fas fa-check-circle"></i> Review your coverage</li>
+              <li><i class="fas fa-check-circle"></i> Gather necessary documents</li>
+              <li><i class="fas fa-check-circle"></i> Estimate repair/replacement costs</li>
+              <li><i class="fas fa-check-circle"></i> Process your claim</li>
+            </ul>
+          </div>
+          <div class="sidebar-card">
+            <i class="fas fa-phone-alt"></i>
+            <h4>Need help?</h4>
+            <p>Call us anytime to speak with a claims specialist.</p>
+            <strong>1-800-TRAVELTRUST</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>
+

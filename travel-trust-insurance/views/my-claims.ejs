@@ -1,0 +1,59 @@
+<%- include('partials/header', { title: 'My Claims', navActive: '' }) %>
+
+  <section class="page-hero">
+    <div class="container">
+      <h1>My Claims</h1>
+      <p class="page-subtitle">View the claim associated with your name and policy number.</p>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container">
+      <% if (claims.length === 0) { %>
+        <div style="text-align: center; padding: 60px 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+          <h3>No Claims Found</h3>
+          <p style="color: #666;">You haven't submitted any claims yet. <a href="/claim" style="color: #C8102E;">Submit a claim</a> to get started.</p>
+        </div>
+      <% } else { %>
+        <div style="background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; min-width: 1000px;">
+            <thead>
+              <tr style="background: #041E42; color: #fff;">
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Claim ID</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Name</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Policy Number</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Email</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Phone</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Claim Type</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Incident Date</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Description</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Submitted On</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% claims.forEach(function(claim, index) { %>
+                <tr style="background: <%= index % 2 === 0 ? '#fff' : '#f8f9fa' %>; border-bottom: 1px solid #eee;">
+                  <td style="padding: 12px 16px; font-weight: 600; color: #041E42; font-size: 13px;"><%= claim.claim_id %></td>
+                  <td style="padding: 12px 16px; font-size: 14px;"><%= claim.full_name %></td>
+                  <td style="padding: 12px 16px; font-size: 13px; color: #555;"><%= claim.policy_number %></td>
+                  <td style="padding: 12px 16px; font-size: 13px;"><%= claim.email %></td>
+                  <td style="padding: 12px 16px; font-size: 13px; color: #555;"><%= claim.phone || '—' %></td>
+                  <td style="padding: 12px 16px; font-size: 13px; color: #555;"><%= claim.claim_type || '—' %></td>
+                  <td style="padding: 12px 16px; font-size: 13px; color: #555;"><%= claim.date_of_incident || '—' %></td>
+                  <td style="padding: 12px 16px; font-size: 13px; color: #555; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= claim.description %>"><%= claim.description %></td>
+                  <td style="padding: 12px 16px; font-size: 12px; color: #777; white-space: nowrap;"><%= claim.created_at %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top: 12px; text-align: right; color: #888; font-size: 13px;">
+          Total: <strong><%= claims.length %></strong> claim<%= claims.length !== 1 ? 's' : '' %>
+        </div>
+      <% } %>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>
+

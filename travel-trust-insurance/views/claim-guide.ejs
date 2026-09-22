@@ -1,0 +1,82 @@
+<%- include('partials/header', { title: 'Claim Guide Library', navActive: '' }) %>
+
+  <section class="page-hero">
+    <div class="container">
+      <h1>Claim Guide Library</h1>
+      <p class="page-subtitle">Everything you need to know about filing, tracking, and managing your insurance claim.</p>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container">
+      <div class="about-story" style="align-items: start;">
+        <div class="about-text">
+          <h2>Your Complete Guide to Insurance Claims</h2>
+          <p>Filing an insurance claim can feel overwhelming, but at TravelTrust, we strive to make the process as smooth and transparent as possible. Whether you're dealing with an auto accident, property damage, a travel mishap, or a business interruption, our step-by-step guides help you understand what to expect, how to prepare the right documentation, and how to work effectively with claims adjusters. From start to finish, we are here to support you through every milestone of your claims journey.</p>
+        </div>
+        <div class="about-image">
+          <img src="/images/claim-guide-1.jpg" alt="Insurance claim documents and paperwork" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          <p style="margin-top: 12px; font-size: 13px; color: #888; text-align: center; font-style: italic;">Our claims team is dedicated to helping you every step of the way.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Browse Claim Guides by Category</h2>
+      <p class="section-subtitle">Select a guide below to learn more about the claims process for your specific situation.</p>
+      <div class="card-grid" style="grid-template-columns: 1fr; max-width: 400px; margin: 0 auto;">
+        <div class="resource-card">
+          <img src="/images/claim-guide-2.jpg" alt="Travel claim guide">
+          <div class="resource-body">
+            <span class="resource-tag">Travel</span>
+            <h3>Travel Insurance Claims Guide</h3>
+            <p>Covered for trip cancellations, lost luggage, or medical emergencies abroad? Learn how to file your travel claim quickly.</p>
+            <a href="#" class="card-link" id="showTravelGuideBtn">Read Guide <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Travel Claim Guide Detail (hidden by default, shown on click) -->
+      <div id="travelGuideDetail" style="display: none; margin-top: 40px; padding: 32px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <div style="display: flex; gap: 24px; align-items: flex-start;">
+          <div style="flex: 1;">
+            <h3 style="font-size: 22px; color: #041E42; margin-bottom: 16px; font-weight: 700;">Travel Insurance Claims Guide</h3>
+            <p style="font-size: 15px; color: #555; line-height: 1.7; margin-bottom: 14px;">Travel insurance is designed to protect you from the unexpected while you are away from home. Whether you are traveling domestically or internationally, understanding how to file a travel insurance claim can save you time, stress, and money when something goes wrong.</p>
+            <p style="font-size: 15px; color: #555; line-height: 1.7; margin-bottom: 14px;">Common travel insurance claims include trip cancellations or interruptions due to illness, severe weather, or unforeseen events; lost, stolen, or delayed baggage; medical emergencies abroad ranging from minor injuries to hospitalizations; and travel delays that result in additional accommodation or transportation costs. Each type of claim requires specific documentation to ensure a smooth and timely resolution.</p>
+            <p style="font-size: 15px; color: #555; line-height: 1.7; margin-bottom: 14px;">To file a travel claim, you should start by notifying your insurance provider as soon as possible — most policies have strict time limits for reporting incidents. Gather all relevant documents such as police reports (for theft), medical reports and receipts (for health claims), airline or hotel receipts (for delays and cancellations), and any correspondence with travel providers. Having a clear, organized record of events will significantly speed up the review process.</p>
+            <p style="font-size: 15px; color: #555; line-height: 1.7;">Our claims specialists are available 24/7 to assist travelers in need. Whether you are dealing with a missed connection in a foreign airport or a medical scare miles from home, TravelTrust is committed to helping you get the support you deserve — so you can focus on what matters most: your safety and peace of mind.</p>
+          </div>
+          <div style="flex-shrink: 0; width: 280px;">
+            <img src="/images/claim-guide-3.jpg" alt="Travel insurance" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const showBtn = document.getElementById('showTravelGuideBtn');
+  const detailSection = document.getElementById('travelGuideDetail');
+  
+  if (showBtn && detailSection) {
+    showBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (detailSection.style.display === 'none' || detailSection.style.display === '') {
+        detailSection.style.display = 'block';
+        showBtn.innerHTML = 'Hide Guide <i class="fas fa-arrow-up"></i>';
+        detailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        detailSection.style.display = 'none';
+        showBtn.innerHTML = 'Read Guide <i class="fas fa-arrow-right"></i>';
+      }
+    });
+  }
+});
+</script>
+
+

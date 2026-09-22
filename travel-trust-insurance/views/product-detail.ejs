@@ -1,0 +1,54 @@
+ <%- include('partials/header', { title: product.name, navActive: 'products' }) %>
+
+  <section class="page-hero">
+    <div class="container">
+      <a href="/products" class="back-link"><i class="fas fa-arrow-left"></i> Back to Products</a>
+      <div class="detail-header">
+        <div class="detail-icon">
+          <% if (product.id === 'auto') { %><i class="fas fa-car"></i>
+          <% } else if (product.id === 'travel') { %><i class="fas fa-plane"></i>
+          <% } else { %><i class="fas fa-shield-alt"></i><% } %>
+        </div>
+        <div>
+          <h1><%= product.name %></h1>
+          <p class="page-subtitle">Personal Insurance</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container detail-content">
+      <div class="detail-main">
+        <h2>Overview</h2>
+        <p><%= product.description %></p>
+
+        <h2>Coverage Highlights</h2>
+        <ul class="coverage-list">
+          <% product.highlights.forEach(h => { %>
+            <li><i class="fas fa-check-circle"></i> <%= h %></li>
+          <% }) %>
+        </ul>
+
+        <div class="detail-cta">
+          <a href="/quote" class="btn btn-red">Get a Quote</a>
+          <a href="/contact" class="btn btn-outline">Contact Us</a>
+        </div>
+      </div>
+      <div class="detail-sidebar">
+        <div class="sidebar-card">
+          <h4>Need Help?</h4>
+          <p>Our support team is available to help you find the right coverage.</p>
+          <a href="/contact" class="card-link">Contact Us <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="sidebar-card">
+          <h4>File a Claim</h4>
+          <p>Already a policyholder? File a claim online or through our mobile app.</p>
+          <a href="#" class="card-link">File a Claim <i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>
+

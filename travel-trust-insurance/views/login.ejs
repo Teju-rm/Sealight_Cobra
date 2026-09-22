@@ -1,0 +1,136 @@
+  <%- include('partials/header', { title: 'Log In', navActive: '' }) %>
+
+  <section class="login-hero">
+    <div class="container">
+      <p class="page-subtitle">Sign in to your account to access your dashboard.</p>
+    </div>
+  </section>
+
+  <section class="login-page">
+    <% const activeRole = (typeof adminError !== 'undefined' && adminError) ? 'admin' : 'user'; %>
+
+    <div class="login-panel" data-active-role="<%= activeRole %>">
+      <div class="login-tabs" role="tablist" aria-label="Choose login type">
+        <button
+          class="login-tab <%= activeRole === 'admin' ? 'active' : '' %>"
+          type="button"
+          role="tab"
+          aria-selected="<%= activeRole === 'admin' ? 'true' : 'false' %>"
+          aria-controls="admin-login-panel"
+          data-login-tab="admin">
+          Admin
+        </button>
+        <button
+          class="login-tab <%= activeRole === 'user' ? 'active' : '' %>"
+          type="button"
+          role="tab"
+          aria-selected="<%= activeRole === 'user' ? 'true' : 'false' %>"
+          aria-controls="user-login-panel"
+          data-login-tab="user">
+          User
+        </button>
+      </div>
+
+      <div
+        id="admin-login-panel"
+        class="login-form-panel <%= activeRole === 'admin' ? 'active' : '' %>"
+        role="tabpanel"
+        data-login-panel="admin"
+        <%= activeRole === 'admin' ? '' : 'hidden' %>>
+        <div class="login-heading">
+          <h1>Admin Login</h1>
+          <p>Sign in to view all claims</p>
+        </div>
+
+        <% if (typeof adminError !== 'undefined' && adminError) { %>
+          <div class="login-error">
+            <i class="fas fa-exclamation-circle"></i><%= adminError %>
+          </div>
+        <% } %>
+
+        <form id="adminLoginForm" action="/login/admin" method="POST" class="login-form">
+          <div class="login-field">
+            <label for="admin-username">Username</label>
+            <input type="text" id="admin-username" name="username" required>
+          </div>
+
+          <div class="login-field">
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password" name="password" required>
+          </div>
+
+          <button type="submit" class="login-submit">Log in as Admin</button>
+        </form>
+      </div>
+
+      <div
+        id="user-login-panel"
+        class="login-form-panel <%= activeRole === 'user' ? 'active' : '' %>"
+        role="tabpanel"
+        data-login-panel="user"
+        <%= activeRole === 'user' ? '' : 'hidden' %>>
+        <div class="login-heading">
+          <h1>User Login</h1>
+          <p>Sign in to view your claims</p>
+        </div>
+
+        <% if (typeof userError !== 'undefined' && userError) { %>
+          <div class="login-error">
+            <i class="fas fa-exclamation-circle"></i><%= userError %>
+          </div>
+        <% } %>
+
+        <form id="userLoginForm" action="/login/user" method="POST" class="login-form">
+          <div class="login-field">
+            <label for="user-name">Name</label>
+            <input type="text" id="user-name" name="full_name" required>
+          </div>
+
+          <div class="login-field">
+            <label for="user-policy">Policy Number</label>
+            <input type="text" id="user-policy" name="policy_number" required>
+          </div>
+
+          <button type="submit" class="login-submit">Log in as User</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <script src="/js/script.js"></script>
+  <script>
+    function updateLoginTab(role, item) {
+      const isActive = item.dataset.loginTab === role;
+      item.classList.toggle('active', isActive);
+      item.setAttribute('aria-selected', String(isActive));
+    }
+
+    function updateLoginPanel(role, panel) {
+      const isActive = panel.dataset.loginPanel === role;
+      panel.classList.toggle('active', isActive);
+      panel.hidden = !isActive;
+    }
+
+    function handleLoginTabClick(event) {
+      const role = event.currentTarget.dataset.loginTab;
+
+      document.querySelectorAll('[data-login-tab]').forEach((item) => {
+        updateLoginTab(role, item);
+      });
+
+      document.querySelectorAll('[data-login-panel]').forEach((panel) => {
+        updateLoginPanel(role, panel);
+      });
+    }
+
+    function initializeLoginTab(tab) {
+      tab.addEventListener('click', handleLoginTabClick);
+    }
+
+    document.querySelectorAll('[data-login-tab]').forEach(initializeLoginTab);
+
+    document.getElementById('adminLoginForm').addEventListener('submit', signInAdministrator);
+    document.getElementById('userLoginForm').addEventListener('submit', signInPolicyholder);
+  </script>
+
+  <%- include('partials/footer', { skipMainScript: true }) %>

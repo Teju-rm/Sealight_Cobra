@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="coveragecapture-build" content="<%= buildVersion %>">
+  <meta name="coveragecapture-environment" content="<%= coverageEnvironment %>">
+  <title><%= typeof title !== 'undefined' ? title + ' — TravelTrust Insurance' : 'TravelTrust Insurance' %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="top-bar">
+    <div class="container top-bar-inner">
+      <div class="top-bar-placeholder"></div>
+      <ul class="top-links">
+        <li><a href="/about">About</a></li>
+        <li><a href="/sustainability">Sustainability</a></li>
+        <li><a href="/contact">Contact Us</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== MAIN NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="container nav-inner">
+      <a href="/" class="logo">
+        <span class="logo-text">TRAVELTRUST</span>
+        <span class="logo-icon"><i class="fas fa-umbrella"></i></span>
+      </a>
+      <ul class="nav-links">
+        <li class="nav-item-mega">
+          <a href="/products" class="mega-trigger">For Individuals <i class="fas fa-chevron-down"></i></a>
+          <!-- Mega Menu Dropdown -->
+          <div class="mega-menu">
+            <div class="mega-menu-inner">
+              <div class="mega-col">
+                <h4 class="mega-heading" style="font-weight: 700;">File Your Claim</h4>
+                <a href="/claim" style="font-size: 14px; color: #666; margin-bottom: 20px; display: block;">Submit your claim</a>
+                <h4 class="mega-heading" style="font-weight: 600; font-size: 14px;">Track Your Claim</h4>
+                <a href="/claim-status" style="font-size: 13px; color: #666; display: block;">Check status</a>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="nav-item-mega">
+          <a href="/products?category=business" class="mega-trigger">For Business <i class="fas fa-chevron-down"></i></a>
+          <!-- Mega Menu Dropdown -->
+          <div class="mega-menu mega-menu-sm">
+            <div class="mega-menu-inner">
+              <div class="mega-col">
+                <h4 class="mega-heading">Industries</h4>
+                <ul class="mega-links">
+                  <li><a href="/transportation">Transportation</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="nav-item-mega">
+          <a href="#" class="mega-trigger">Claims <i class="fas fa-chevron-down"></i></a>
+          <!-- Mega Menu Dropdown -->
+          <div class="mega-menu mega-menu-xs">
+            <div class="mega-menu-inner">
+              <div class="mega-col">
+                <h4 class="mega-heading">Manage Your Claim Experience</h4>
+                <ul class="mega-links">
+                  <li><a href="/claim-guide">Claim Guide Library</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+<div class="nav-right">
+        <a href="#" class="search-icon"><i class="fas fa-search"></i></a>
+        <% if (session && session.username) { %>
+          <a href="/logout" class="login-btn" style="background: #6b7280;">Logout</a>
+        <% } else { %>
+          <a href="/login" class="login-btn">Log in</a>
+        <% } %>
+      </div>
+      <div class="mobile-toggle">
+        <i class="fas fa-bars"></i>
+      </div>
+    </div>
+  </nav>

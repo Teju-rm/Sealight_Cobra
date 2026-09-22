@@ -1,0 +1,34 @@
+ <%- include('partials/header', { title: 'Insurance Products', navActive: 'products' }) %>
+
+  <section class="page-hero">
+    <div class="container">
+      <h1>Insurance Products</h1>
+      <p class="page-subtitle">Comprehensive coverage options for every stage of life.</p>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container">
+      <div class="card-grid full-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 600px; margin: 0 auto;">
+        <% if (typeof products !== 'undefined' && products.length) { %>
+          <% products.forEach(p => { %>
+            <a href="/products/<%= p.id %>" class="product-card">
+              <div class="card-icon">
+                <% if (p.id === 'auto') { %><i class="fas fa-car"></i>
+                <% } else if (p.id === 'travel') { %><i class="fas fa-plane"></i>
+                <% } else { %><i class="fas fa-shield-alt"></i><% } %>
+              </div>
+              <h3><%= p.name %></h3>
+              <p><%= p.description.substring(0, 80) %>...</p>
+              <span class="card-link">Learn more <i class="fas fa-arrow-right"></i></span>
+            </a>
+          <% }) %>
+        <% } else { %>
+          <p class="no-results">No products found.</p>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>
+

@@ -1,0 +1,23 @@
+<%- include('partials/header', { title: 'Transportation Insurance', navActive: 'business' }) %>
+
+  <section class="transportation-hero">
+    <div class="container">
+      <div class="transportation-card">
+        <h1>Transportation Insurance</h1>
+        <p>Risk management solutions for commercial transportation</p>
+        <form class="transportation-form" action="/quote" method="GET">
+          <label for="transportationBusiness">Select your business</label>
+          <div class="transportation-form-row">
+            <select id="transportationBusiness" name="businessType" required>
+              <option value=""></option>
+              <option value="bus">Bus</option>
+              <option value="rental-car">Rental Car</option>
+            </select>
+            <button type="submit" class="btn btn-red">Find solutions</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+<%- include('partials/footer') %>

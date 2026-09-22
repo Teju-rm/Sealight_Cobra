@@ -1,0 +1,85 @@
+ <%- include('partials/header', { title: 'Home', navActive: 'home' }) %>
+
+  <!-- ===== HERO SECTION ===== -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-content">
+        <h1>TravelTrust has got you covered every day and when it matters most.</h1>
+        <p class="hero-subtitle">Auto, home, renters, business &amp; more - find the right coverage for what matters to you.</p>
+        <div class="hero-cta-group">
+          <a href="#heroQuoteBox" class="btn btn-red" id="showHeroQuote">Get a Quote</a>
+          <a href="/products" class="btn btn-outline">Explore Products</a>
+        </div>
+      </div>
+    </div>
+    <!-- Hero image overlay -->
+    <div class="hero-image-area">
+      <img src="/images/hero.jpg" alt="Family protection" class="hero-bg-img">
+      <div class="hero-quote-overlay" id="heroQuoteBox" hidden>
+        <div class="quote-form-compact">
+          <h3>Get a quote</h3>
+          <form id="heroQuoteForm">
+            <div class="form-row">
+              <div class="form-group">
+                <input type="text" name="zipCode" placeholder="ZIP Code" pattern="\d{5}" maxlength="5" required>
+              </div>
+              <div class="form-group">
+                <select name="insuranceType" required>
+                  <option value="">Insurance type</option>
+                  <% if (typeof products !== 'undefined' && products.length) { %>
+                    <% products.forEach(p => { %>
+                      <option value="<%= p.id %>"><%= p.name %></option>
+                    <% }) %>
+                  <% } %>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-red">Start Quote</button>
+            </div>
+          </form>
+          <div id="heroQuoteResponse" class="quote-response-mini"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RESOURCES SECTION ===== -->
+  <section class="section section-light">
+    <div class="container">
+      <h2 class="section-title">Resources &amp; Insights</h2>
+      <p class="section-subtitle">Tips and tools to help you prepare and prevent.</p>
+      <div class="card-grid grid-3">
+        <div class="resource-card">
+          <img src="/images/home-safety.jpg" alt="Home safety tips">
+          <div class="resource-body">
+            <span class="resource-tag">Home</span>
+            <h3>10 Tips to Winterize Your Home</h3>
+            <p>Protect your home from winter weather with these essential maintenance tips.</p>
+            <p class="resource-more" hidden>Before the first freeze, inspect your roof, clean gutters, seal drafty windows, and disconnect outdoor hoses. A little preparation can help prevent burst pipes, ice damage, and costly emergency repairs during severe weather.</p>
+            <a href="#" class="card-link resource-read-more">Read More <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+        <div class="resource-card">
+          <img src="/images/auto-safety.jpg" alt="Auto safety">
+          <div class="resource-body">
+            <span class="resource-tag">Auto</span>
+            <h3>Understanding Your Coverage Options</h3>
+            <p>A simple guide to auto insurance coverages and what they mean for you.</p>
+            <p class="resource-more" hidden>Liability coverage helps protect you if you injure someone or damage property, while collision and comprehensive coverage can help repair or replace your own vehicle after accidents, theft, storms, or other covered events.</p>
+            <a href="#" class="card-link resource-read-more">Read More <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+        <div class="resource-card">
+          <img src="/images/business-prep.jpg" alt="Business preparedness">
+          <div class="resource-body">
+            <span class="resource-tag">Business</span>
+            <h3>Cyber Security Best Practices for Small Business</h3>
+            <p>Simple steps to protect your business from cyber threats and data breaches.</p>
+            <p class="resource-more" hidden>Use strong passwords, enable multi-factor authentication, keep software updated, and train employees to spot suspicious links. Regular backups and a response plan can help your business recover faster after a cyber incident.</p>
+            <a href="#" class="card-link resource-read-more">Read More <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>

@@ -1,0 +1,54 @@
+<%- include('partials/header', { title: 'Check Claim Status', navActive: '' }) %>
+
+  <section class="page-hero">
+    <div class="container">
+      <h1>Check Your Claim Status</h1>
+      <p class="page-subtitle">Enter your Claim ID and Policy Number to view the current status of your claim.</p>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container">
+      <div class="form-page-layout">
+        <div class="form-card">
+          <h2>Look Up Your Claim</h2>
+          <form id="claimStatusForm">
+            <div class="form-row two-cols">
+              <div class="form-group">
+                <label for="claimId">Claim ID <span class="required">*</span></label>
+                <input type="text" id="claimId" name="claimId" placeholder="e.g. CLM-..." required>
+              </div>
+              <div class="form-group">
+                <label for="policyNumber">Policy Number <span class="required">*</span></label>
+                <input type="text" id="policyNumber" name="policyNumber" placeholder="e.g. POL-123456" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-red btn-full">Check Status</button>
+          </form>
+          <div id="claimStatusResponse" class="response-area"></div>
+        </div>
+
+        <div class="form-sidebar">
+          <div class="sidebar-card">
+            <i class="fas fa-info-circle"></i>
+            <h4>Where to find your Claim ID</h4>
+            <p>Your Claim ID was provided when you submitted your claim. It starts with <strong>CLM-</strong> followed by letters and numbers.</p>
+            <p style="margin-top: 10px;">If you've lost your Claim ID, please call us at <strong>1-800-TRAVELTRUST</strong> for assistance.</p>
+          </div>
+          <div class="sidebar-card">
+            <i class="fas fa-clock"></i>
+            <h4>Typical processing times</h4>
+            <ul>
+              <li><i class="fas fa-check-circle"></i> Auto claims: 3-5 business days</li>
+              <li><i class="fas fa-check-circle"></i> Home claims: 5-7 business days</li>
+              <li><i class="fas fa-check-circle"></i> Travel claims: 2-3 business days</li>
+              <li><i class="fas fa-check-circle"></i> Other claims: Varies</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>
+
