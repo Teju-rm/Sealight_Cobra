@@ -29,7 +29,7 @@ When untested changes exist, the checker prints their `file`, `function`, and `s
 ## Fields used by the checker
 
 - **`untestedChanges` — required:** Must be an array. A missing value or non-array makes the checker fail. An empty array passes the release-risk check; a non-empty array fails it.
-- **`riskScore` — optional:** Used only for display. If absent or `null`, the checker displays `not provided`. The checker does not validate its type or calculate a threshold from it.
+- **`riskScore` — optional:** Used only for display. If absent or `null`, the checker displays `n/a`. The checker does not validate its type or calculate a threshold from it.
 - **`file`, `function`, `status` — optional per entry:** Used only when displaying each item in a non-empty `untestedChanges` array. Missing or `null` values display as `(unknown file)`, `(unknown function)`, or `unknown status`, respectively. The checker does not validate entry types or require these properties.
 - Any other response properties are ignored by this script.
 
