@@ -105,7 +105,7 @@ router.get('/lookup', async function lookupClaimHandler(req, res) {
     );
 
     if (result.length === 0 || result[0].values.length === 0) {
-      return res.status(404).json({ error: 'No claim found with the provided Claim ID and Policy Number combination.' });
+      return res.status(404).json({ error: 'No claim record found with the provided Claim ID and Policy Number combination.' });
     }
 
     const columns = result[0].columns;
