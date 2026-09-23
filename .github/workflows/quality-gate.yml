@@ -41,6 +41,15 @@ jobs:
         id: build
         run: echo "build_id=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
+      # TEMPORARY scaffolding for Phase 5 development only. Remove this mock once
+      # the real Mapping Engine GET /risk/:buildId (Phase 4) is deployed and
+      # INGESTION_API_HOST points to it. Do not let this mock silently mask a
+      # broken real integration later.
+      - name: Start mock Risk API (temporary)
+        run: |
+          node scripts/mock-risk-api.js &
+          sleep 1
+
       - name: Check Release Risk
         run: node scripts/check-release-risk.js
         env:
