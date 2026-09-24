@@ -1,0 +1,57 @@
+# Quality Gate: block pull requests when the risk API reports changed code without tests.
+# How it works:
+# 1. Check out the PR and prepare the Node.js runtime/dependencies.
+# 2. Run the build/test placeholder and expose its build_id output.
+# 3. Query GET /risk/{buildId}; the script fails closed on untested changes or API errors.
+# Configure INGESTION_API_HOST as a repository Actions Variable (not a secret),
+# since it is a hostname and not sensitive credential data. Replace the localhost
+# fallback with the deployed Ingestion API host in Settings > Secrets and variables
+# > Actions > Variables once that API is deployed.
+
+name: Quality Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  release-risk:
+    name: Build, test, and check release risk
+    runs-on: ubuntu-latest
+    env:
+      # Set this repository Variable to the real API host after deployment.
+      INGESTION_API_HOST: ${{ vars.INGESTION_API_HOST || 'http://localhost:4000' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Placeholder assumes the current Node project lives in this subdirectory.
+      # Adjust install and test steps for the actual COBRA tech stack as needed.
+      - name: Install dependencies
+        run: npm ci
+        working-directory: travel-trust-insurance
+
+      # Replace this stub with the build and tests that produce the real COBRA buildId.
+      - name: Build & Test (stub)
+        id: build
+        run: echo "build_id=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      # TEMPORARY scaffolding for Phase 5 development only. Remove this mock once
+      # the real Mapping Engine GET /risk/:buildId (Phase 4) is deployed and
+      # INGESTION_API_HOST points to it. Do not let this mock silently mask a
+      # broken real integration later.
+      - name: Start mock Risk API (temporary)
+        run: |
+          node scripts/mock-risk-api.js &
+          sleep 1
+
+      - name: Check Release Risk
+        run: node scripts/check-release-risk.js
+        env:
+          BUILD_ID: ${{ steps.build.outputs.build_id }}
+          INGESTION_API_HOST: ${{ vars.INGESTION_API_HOST || 'http://localhost:4000' }}
