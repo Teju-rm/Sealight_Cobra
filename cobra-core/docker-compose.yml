@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cobra
+      POSTGRES_PASSWORD: cobra
+      POSTGRES_DB: cobra
+    ports:
+      - "5432:5432"
+    volumes:
+      - cobra_pgdata:/var/lib/postgresql/data
+
+volumes:
+  cobra_pgdata:
