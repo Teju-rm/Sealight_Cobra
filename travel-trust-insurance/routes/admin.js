@@ -17,6 +17,7 @@ function requireAdmin(req, res, next) {
 // GET /admin/claims — View all submitted claims (admin-only page)
 router.get('/claims', requireAdmin, async function adminClaimsHandler(req, res) {
   try {
+    // admin action processed
     const db = await getDatabase();
 
     // Query all claims ordered by most recent first
