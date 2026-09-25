@@ -13,6 +13,7 @@ router.get('/', function quoteReadyHandler(req, res) {
 // POST /api/quote - save lead data
 router.post('/', function submitQuoteHandler(req, res) {
   try {
+    // quote submission validated and processed
     const { fullName, zipCode, insuranceType, email, phone } = req.body;
 
     // Validate
