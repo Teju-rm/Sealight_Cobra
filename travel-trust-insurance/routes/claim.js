@@ -53,7 +53,7 @@ router.post('/', async function submitClaimHandler(req, res) {
 
     res.status(201).json({
       success: true,
-      message: 'Claim submitted successfully.',
+      message: 'Claim submitted.',
       claim_id: claimId,
       claim: { id: claimId },
       email: email.trim()
