@@ -11,90 +11,89 @@
     --green-bg: #e8f5e9;
     --red: #c62828;
     --red-bg: #fdecea;
-    --gray-bg: #f4f6f8;
+    --gray: #666666;
+    --gray-bg: #f0f0f0;
+    --page-bg: #f4f6f8;
     --border: #e0e0e0;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    background: var(--gray-bg);
+    background: var(--page-bg);
     color: #1a1a1a;
   }
   header {
     background: linear-gradient(135deg, var(--navy), var(--navy-dark));
     color: white;
     padding: 24px 32px;
-  }
-  header h1 { margin: 0; font-size: 24px; letter-spacing: 0.5px; }
-  header p { margin: 4px 0 0; opacity: 0.85; font-size: 14px; }
-
-  .controls {
-    max-width: 960px;
-    margin: 24px auto 0;
-    padding: 0 24px;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
-  .controls input {
-    flex: 1;
-    padding: 10px 14px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 15px;
-  }
-  .controls button {
-    padding: 10px 20px;
-    background: var(--navy);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 15px;
-    cursor: pointer;
-  }
-  .controls button:hover { background: var(--navy-dark); }
-
-  main { max-width: 960px; margin: 24px auto 60px; padding: 0 24px; }
-
-  .verdict-banner {
-    border-radius: 10px;
-    padding: 24px 28px;
-    margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
     flex-wrap: wrap;
     gap: 12px;
   }
-  .verdict-banner.pass { background: var(--green-bg); border: 1px solid #a5d6a7; }
-  .verdict-banner.fail { background: var(--red-bg); border: 1px solid #ef9a9a; }
-  .verdict-title { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
-  .verdict-banner.pass .verdict-title { color: var(--green); }
-  .verdict-banner.fail .verdict-title { color: var(--red); }
-  .verdict-sub { font-size: 14px; color: #444; }
-  .risk-score { text-align: right; }
-  .risk-score .num { font-size: 32px; font-weight: 700; }
-  .risk-score .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #666; }
+  header h1 { margin: 0; font-size: 24px; letter-spacing: 0.5px; }
+  header p { margin: 4px 0 0; opacity: 0.85; font-size: 14px; }
+  .refresh-btn {
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .refresh-btn:hover { background: rgba(255,255,255,0.25); }
+
+  main { max-width: 1100px; margin: 24px auto 60px; padding: 0 24px; }
+
+  .builds-table {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 18px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+  th { color: #666; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #fafbfc; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .verdict-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .verdict-pill.pass { background: var(--green-bg); color: var(--green); }
+  .verdict-pill.fail { background: var(--red-bg); color: var(--red); }
+  .verdict-pill.no_data { background: var(--gray-bg); color: var(--gray); }
+
+  .coverage-cell { font-variant-numeric: tabular-nums; }
+  .muted { color: #999; }
+
+  .detail-row td { padding: 0; background: #fafbfc; }
+  .detail-panel { padding: 20px 24px 28px; border-top: 1px solid var(--border); }
 
   .card {
     background: white;
     border: 1px solid var(--border);
-    border-radius: 10px;
-    margin-bottom: 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
     overflow: hidden;
   }
-  .card h2 {
+  .card h3 {
     margin: 0;
-    padding: 14px 20px;
-    font-size: 15px;
+    padding: 12px 18px;
+    font-size: 13px;
     background: #fafbfc;
     border-bottom: 1px solid var(--border);
   }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 10px 20px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
-  th { color: #666; font-weight: 600; font-size: 12px; text-transform: uppercase; }
-  tr:last-child td { border-bottom: none; }
   .status-pill {
     display: inline-block;
     padding: 2px 10px;
@@ -105,106 +104,147 @@
   .status-pill.new { background: #e3f2fd; color: #1565c0; }
   .status-pill.modified { background: #fff3e0; color: #e65100; }
   .status-pill.deleted { background: #f3e5f5; color: #6a1b9a; }
-  .empty-state { padding: 30px 20px; color: #888; font-size: 14px; text-align: center; }
-  .error-box { background: var(--red-bg); border: 1px solid #ef9a9a; color: var(--red); padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; }
+  .empty-state { padding: 20px 18px; color: #888; font-size: 13px; text-align: center; }
+  .error-box { background: var(--red-bg); border: 1px solid #ef9a9a; color: var(--red); padding: 16px 20px; border-radius: 8px; margin: 24px; }
   .loading { padding: 40px; text-align: center; color: #888; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>COBRA — Release Confidence</h1>
-  <p>Language-agnostic changed-function coverage &amp; release risk</p>
+  <div>
+    <h1>COBRA — Release Confidence</h1>
+    <p>Language-agnostic changed-function coverage &amp; release risk</p>
+  </div>
+  <button class="refresh-btn" id="refreshBtn">Refresh</button>
 </header>
 
-<div class="controls">
-  <input id="buildIdInput" type="text" placeholder="Enter build ID (e.g. demo-pass)" />
-  <button id="loadBtn">Check Build</button>
-</div>
-
 <main id="main">
-  <div class="loading">Enter a build ID above and click "Check Build".</div>
+  <div class="loading">Loading builds...</div>
 </main>
 
 <script>
   const main = document.getElementById('main');
-  const input = document.getElementById('buildIdInput');
-  const btn = document.getElementById('loadBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+  let expandedBuildId = null;
+  let detailCache = {};
 
-  async function loadBuild() {
-    const buildId = input.value.trim();
-    if (!buildId) return;
-    main.innerHTML = '<div class="loading">Loading risk report for "' + escapeHtml(buildId) + '"...</div>';
+  const VERDICT_LABEL = { pass: '\u2705 Pass', fail: '\u274C Fail', no_data: '\u2014 No Data' };
 
+  async function loadBuilds() {
+    main.innerHTML = '<div class="loading">Loading builds...</div>';
     let data;
     try {
-      const res = await fetch('/risk/' + encodeURIComponent(buildId));
-      if (!res.ok) {
-        main.innerHTML = '<div class="error-box">API returned HTTP ' + res.status + ' for build "' + escapeHtml(buildId) + '".</div>';
-        return;
-      }
+      const res = await fetch('/builds');
+      if (!res.ok) { main.innerHTML = '<div class="error-box">API returned HTTP ' + res.status + '.</div>'; return; }
       data = await res.json();
     } catch (err) {
       main.innerHTML = '<div class="error-box">Could not reach the Ingestion API: ' + escapeHtml(err.message) + '</div>';
       return;
     }
-
-    render(data);
+    renderTable(data.builds || []);
   }
 
-  function render(data) {
+  function renderTable(builds) {
+    if (builds.length === 0) {
+      main.innerHTML = '<div class="builds-table"><div class="empty-state">No builds recorded yet.</div></div>';
+      return;
+    }
+
+    let html = '<div class="builds-table"><table><thead><tr>' +
+      '<th>Build</th><th>Repo</th><th>Changed</th><th>Untested</th><th>Code Changes Coverage</th><th>Quality Gate</th>' +
+      '</tr></thead><tbody>';
+
+    for (const b of builds) {
+      const cov = b.codeChangesCoverage === null ? '<span class="muted">\u2014</span>' : b.codeChangesCoverage + '%';
+      html += '<tr class="build-row" data-build-id="' + escapeHtml(b.buildId) + '">' +
+        '<td><strong>' + escapeHtml(b.buildId) + '</strong></td>' +
+        '<td>' + escapeHtml(b.repo || '') + '</td>' +
+        '<td>' + b.totalChangedFunctions + '</td>' +
+        '<td>' + b.untestedChangedFunctions + '</td>' +
+        '<td class="coverage-cell">' + cov + '</td>' +
+        '<td><span class="verdict-pill ' + b.verdict + '">' + VERDICT_LABEL[b.verdict] + '</span></td>' +
+        '</tr>' +
+        '<tr class="detail-row" id="detail-' + cssEscape(b.buildId) + '" style="display:none"><td colspan="6"></td></tr>';
+    }
+    html += '</tbody></table></div>';
+    main.innerHTML = html;
+
+    document.querySelectorAll('.build-row').forEach((row) => {
+      row.addEventListener('click', () => toggleDetail(row.dataset.buildId));
+    });
+  }
+
+  async function toggleDetail(buildId) {
+    const detailRow = document.getElementById('detail-' + cssEscape(buildId));
+    const isOpen = detailRow.style.display !== 'none';
+
+    document.querySelectorAll('.detail-row').forEach((r) => { r.style.display = 'none'; });
+
+    if (isOpen && expandedBuildId === buildId) {
+      expandedBuildId = null;
+      return;
+    }
+
+    expandedBuildId = buildId;
+    detailRow.style.display = '';
+    const cell = detailRow.querySelector('td');
+    cell.innerHTML = '<div class="detail-panel"><div class="loading">Loading detail...</div></div>';
+
+    if (!detailCache[buildId]) {
+      try {
+        const res = await fetch('/risk/' + encodeURIComponent(buildId));
+        detailCache[buildId] = await res.json();
+      } catch (err) {
+        cell.innerHTML = '<div class="detail-panel"><div class="error-box">Could not load detail: ' + escapeHtml(err.message) + '</div></div>';
+        return;
+      }
+    }
+
+    cell.innerHTML = '<div class="detail-panel">' + renderDetail(detailCache[buildId]) + '</div>';
+  }
+
+  function renderDetail(data) {
     const untested = data.untestedChanges || [];
     const recommendations = data.testRecommendations || [];
-    const riskScore = (data.riskScore === null || data.riskScore === undefined) ? null : data.riskScore;
-    const isPass = untested.length === 0;
 
-    let html = '';
-
-    html += '<div class="verdict-banner ' + (isPass ? 'pass' : 'fail') + '">';
-    html += '<div>';
-    html += '<div class="verdict-title">' + (isPass ? '\u2705 Release Risk: PASS' : '\u274C Release Risk: FAIL') + '</div>';
-    html += '<div class="verdict-sub">Build <strong>' + escapeHtml(data.buildId || '') + '</strong> \u2014 ' +
-            (isPass ? 'all changed code has test coverage.' : untested.length + ' changed function(s) have no test coverage.') + '</div>';
-    html += '</div>';
-    html += '<div class="risk-score"><div class="num">' + (riskScore === null ? 'n/a' : riskScore) + '</div><div class="label">Risk Score</div></div>';
-    html += '</div>';
-
-    html += '<div class="card"><h2>Untested Code Changes (' + untested.length + ')</h2>';
+    let html = '<div class="card"><h3>Untested Code Changes (' + untested.length + ')</h3>';
     if (untested.length === 0) {
       html += '<div class="empty-state">No untested changed code was reported.</div>';
     } else {
       html += '<table><thead><tr><th>File</th><th>Function</th><th>Status</th></tr></thead><tbody>';
-      for (const change of untested) {
-        html += '<tr><td>' + escapeHtml(change.file || '(unknown file)') + '</td>' +
-                '<td>' + escapeHtml(change.function || '(unknown function)') + '</td>' +
-                '<td><span class="status-pill ' + escapeHtml(change.status || '') + '">' + escapeHtml(change.status || 'unknown') + '</span></td></tr>';
+      for (const c of untested) {
+        html += '<tr><td>' + escapeHtml(c.file || '') + '</td><td>' + escapeHtml(c.function || '') + '</td>' +
+          '<td><span class="status-pill ' + escapeHtml(c.status || '') + '">' + escapeHtml(c.status || '') + '</span></td></tr>';
       }
       html += '</tbody></table>';
     }
     html += '</div>';
 
-    html += '<div class="card"><h2>Test Recommendations (' + recommendations.length + ')</h2>';
+    html += '<div class="card"><h3>Test Recommendations (' + recommendations.length + ')</h3>';
     if (recommendations.length === 0) {
       html += '<div class="empty-state">No tests currently cover the changed functions for this build.</div>';
     } else {
       html += '<table><thead><tr><th>Test</th><th>Covers Changed Functions</th></tr></thead><tbody>';
-      for (const rec of recommendations) {
-        html += '<tr><td>' + escapeHtml(rec.testId || '') + '</td>' +
-                '<td>' + (rec.coversChangedFunctions || []).map(escapeHtml).join(', ') + '</td></tr>';
+      for (const r of recommendations) {
+        html += '<tr><td>' + escapeHtml(r.testId || '') + '</td><td>' + (r.coversChangedFunctions || []).map(escapeHtml).join(', ') + '</td></tr>';
       }
       html += '</tbody></table>';
     }
     html += '</div>';
 
-    main.innerHTML = html;
+    return html;
   }
 
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
+  function cssEscape(str) {
+    return String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
+  }
 
-  btn.addEventListener('click', loadBuild);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadBuild(); });
+  refreshBtn.addEventListener('click', loadBuilds);
+  loadBuilds();
 </script>
 
 </body>
