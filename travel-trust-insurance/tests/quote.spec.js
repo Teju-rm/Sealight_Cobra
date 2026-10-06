@@ -76,5 +76,22 @@ test.describe('Quote Form Tests', () => {
     expect(validationMessage.length).toBeGreaterThan(0);
   });
 
+  test('should return the auto insurance discount from the quote API', async ({ page }) => {
+    const response = await page.request.post(`${baseUrl}/api/quote`, {
+      data: {
+        fullName: 'Demo Customer',
+        zipCode: '10001',
+        insuranceType: 'auto',
+        email: 'demo@example.com',
+        phone: '(555) 123-4567'
+      }
+    });
+
+    expect(response.ok()).toBeTruthy();
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.lead.discount).toBe(10);
+  });
+
 });
 
