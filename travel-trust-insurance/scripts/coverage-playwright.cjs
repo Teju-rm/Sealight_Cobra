@@ -76,8 +76,12 @@ async function run() {
       backendCoverage: records.flatMap((record) => record.coverage.backend || []),
     };
     fs.writeFileSync(path.join(artifacts, 'ci-coverage.json'), JSON.stringify(report, null, 2));
-    for (const record of records) await upload(record);
-    console.log(`Captured and uploaded ${records.length} Playwright test coverage sessions.`);
+    if (process.env.COVERAGE_SKIP_BRIDGE_UPLOAD !== '1') {
+      for (const record of records) await upload(record);
+      console.log(`Captured and uploaded ${records.length} Playwright test coverage sessions.`);
+    } else {
+      console.log(`Captured ${records.length} Playwright test coverage sessions.`);
+    }
   } finally {
     if (!stopped) await stopServer(server);
   }
