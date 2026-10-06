@@ -4,6 +4,7 @@ const { pool } = require("./db/pool");
 const ingestRoute = require("./routes/ingest");
 const buildScanRoute = require("./routes/buildScan");
 const createRiskRouter = require("./routes/risk");
+const createQualityGateRulesRouter = require("./routes/qualityGateRules");
 const createBuildsRouter = require("./routes/builds");
 const app = express();
 app.use(express.json({ limit: "5mb" }));
@@ -12,6 +13,7 @@ app.get("/health", (req, res) => res.json({ status: "ok" }));
 app.use(ingestRoute);
 app.use(buildScanRoute);
 app.use(createRiskRouter(pool));
+app.use(createQualityGateRulesRouter(pool));
 app.use(createBuildsRouter(pool));
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
