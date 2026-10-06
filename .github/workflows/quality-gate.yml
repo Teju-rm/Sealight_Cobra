@@ -1,12 +1,13 @@
-# Quality Gate: block pull requests when the risk API reports changed code without tests.
-# How it works:
-# 1. Check out the PR and prepare the Node.js runtime/dependencies.
-# 2. Run the build/test placeholder and expose its build_id output.
-# 3. Query GET /risk/{buildId}; the script fails closed on untested changes or API errors.
-# Configure INGESTION_API_HOST as a repository Actions Variable (not a secret),
-# since it is a hostname and not sensitive credential data. Replace the localhost
-# fallback with the deployed Ingestion API host in Settings > Secrets and variables
-# > Actions > Variables once that API is deployed.
+# Quality Gate: fails a pull request when the COBRA Risk API says the build is risky.
+#
+# Needs one repository Variable (Settings > Secrets and variables > Actions > Variables):
+#   INGESTION_API_HOST  = public URL of cobra-core (the ngrok https URL for the demo)
+# Optional demo variable:
+#   DEMO_BUILD_ID       = pin the check to a build that already exists in the API's database.
+#                         Remove it once every PR commit is scanned and ingested for real.
+#
+# There is no fallback on purpose: if INGESTION_API_HOST is missing, the check
+# fails loudly instead of quietly passing.
 
 name: Quality Gate
 
