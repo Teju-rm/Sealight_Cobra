@@ -5,6 +5,17 @@ const path = require('path');
 
 const leadsPath = path.join(__dirname, '..', 'data', 'leads.json');
 
+// Calculates a loyalty discount percentage based on insurance type.
+function calculateQuoteDiscount(insuranceType) {
+  const discountTable = {
+    auto: 10,
+    home: 8,
+    travel: 5,
+    business: 12
+  };
+  return discountTable[insuranceType] || 0;
+}
+
 // GET /api/quote - placeholder
 router.get('/', function quoteReadyHandler(req, res) {
   res.json({ message: 'Quote endpoint ready' });
@@ -45,6 +56,7 @@ router.post('/', function submitQuoteHandler(req, res) {
       insuranceType,
       email,
       phone,
+      discount: calculateQuoteDiscount(insuranceType),
       timestamp: new Date().toISOString()
     };
 
