@@ -7,31 +7,62 @@ function evaluateRiskResponse(data) {
     return {
       shouldFail: true,
       invalidResponse: true,
+      title: 'RELEASE RISK CHECK FAILED',
       message: 'Risk API response is missing the required untestedChanges array.',
       riskScore: data?.riskScore ?? 'n/a',
+      verdict: data?.verdict ?? 'n/a',
       untestedChanges: []
     };
   }
 
   const riskScore = data.riskScore ?? 'n/a';
+  const verdict = data.verdict;
   const untestedChanges = data.untestedChanges;
-  const message = untestedChanges.length > 0
-    ? untestedChanges.map((change) =>
-      `  ${change.file ?? '(unknown file)'} — ${change.function ?? '(unknown function)'} [${change.status ?? 'unknown status'}]`
-    ).join('\n')
-    : 'No untested changed code was reported.';
+  const list = untestedChanges.map((change) =>
+    `  ${change.file ?? '(unknown file)'} â€” ${change.function ?? '(unknown function)'} [${change.status ?? 'unknown status'}]`
+  ).join('\n');
+
+  // "no_data" means the API has no registered changes for this build.
+  // That is NOT a verified pass, so it fails.
+  if (verdict === 'no_data') {
+    return {
+      shouldFail: true,
+      invalidResponse: false,
+      title: 'NO DATA - NOT A VERIFIED PASS',
+      message: 'The API has no registered changed functions for this build, so nothing was checked.\n  Make sure the Build Scanner and coverage ingest ran for this commit.',
+      riskScore,
+      verdict,
+      untestedChanges
+    };
+  }
+
+  // If the API sends a verdict, follow it (so configured thresholds apply).
+  // Any verdict other than "pass" fails. Without a verdict, fall back to the old rule.
+  const shouldFail = verdict === undefined
+    ? untestedChanges.length > 0
+    : verdict !== 'pass';
+
+  let message = list;
+  if (!list) {
+    message = shouldFail
+      ? `Verdict is "${verdict}" but no untested functions are listed (a threshold was probably not met).`
+      : 'No untested changed code was reported.';
+  }
 
   return {
-    shouldFail: untestedChanges.length > 0,
+    shouldFail,
     invalidResponse: false,
+    title: shouldFail ? 'RELEASE RISK CHECK FAILED' : 'RELEASE RISK CHECK PASSED',
     message,
     riskScore,
+    verdict: verdict ?? 'n/a',
     untestedChanges
   };
 }
 
 function fail(message) {
-  console.error(`\n❌ RELEASE RISK CHECK FAILED\n${message}\n`);
+  console.error(`\nâŒ RELEASE RISK CHECK FAILED\n${message}\n`);
+  console.error(`::error title=Quality Gate::${message.replace(/\r?\n/g, ' | ')}`);
   process.exitCode = 1;
 }
 
@@ -60,7 +91,11 @@ async function main() {
   let data;
   let parsingResponse = false;
   try {
-    response = await fetch(url, { signal: controller.signal });
+    // This header lets the request through ngrok's free-tier warning page.
+    response = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
     if (response.ok) {
       parsingResponse = true;
       data = await response.json();
@@ -89,22 +124,24 @@ async function main() {
     return;
   }
 
+  const line = 'â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”';
   if (result.shouldFail) {
-    console.error('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.error('❌ RELEASE RISK CHECK FAILED');
-    console.error(`Build: ${buildId}   Risk score: ${result.riskScore}`);
-    console.error('Untested changed code:');
+    console.error(`\n${line}`);
+    console.error(`âŒ ${result.title}`);
+    console.error(`Build: ${buildId}   Risk score: ${result.riskScore}   Verdict: ${result.verdict}`);
+    console.error('Details:');
     console.error(result.message);
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    console.error(`${line}\n`);
+    console.error(`::error title=Quality Gate::${result.title} | ${result.message.replace(/\r?\n/g, ' | ')}`);
     process.exitCode = 1;
     return;
   }
 
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('✅ RELEASE RISK CHECK PASSED');
-  console.log(`Build: ${buildId}   Risk score: ${result.riskScore}`);
+  console.log(`\n${line}`);
+  console.log(`âœ… ${result.title}`);
+  console.log(`Build: ${buildId}   Risk score: ${result.riskScore}   Verdict: ${result.verdict}`);
   console.log(result.message);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  console.log(`${line}\n`);
 }
 
 if (require.main === module) {
