@@ -92,14 +92,14 @@ function createRiskRouter(pool) {
       //    with hits = 0 (e.g. V8 precise coverage records every loaded
       //    function, called or not).
       const untestedResult = await pool.query(
-        `SELECT cf.file, cf.function, cf.status
+        `SELECT cf.file, cf.function, cf.status, cf.author
          FROM changed_functions cf
          LEFT JOIN coverage_runs cr
            ON cr.build_id = cf.build_id
           AND cr.file = cf.file
           AND cr.function = cf.function
          WHERE cf.build_id = $1
-         GROUP BY cf.file, cf.function, cf.status
+         GROUP BY cf.file, cf.function, cf.status, cf.author
          HAVING COALESCE(SUM(cr.hits), 0) = 0`,
         [buildId]
       );
@@ -108,6 +108,7 @@ function createRiskRouter(pool) {
         file: row.file,
         function: row.function,
         status: row.status,
+        author: row.author,
       }));
 
       // 2. Test recommendations: distinct test_id in coverage_runs for this

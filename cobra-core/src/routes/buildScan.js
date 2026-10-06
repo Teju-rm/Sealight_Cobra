@@ -22,9 +22,9 @@ router.post("/build-scan", async (req, res) => {
 
     for (const entry of changes) {
       await client.query(
-        `INSERT INTO changed_functions (build_id, file, function, start_line, end_line, status)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [buildId, entry.file, entry.function, entry.startLine, entry.endLine, entry.status]
+        `INSERT INTO changed_functions (build_id, file, function, start_line, end_line, status, author)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [buildId, entry.file, entry.function, entry.startLine, entry.endLine, entry.status, entry.author ?? null]
       );
     }
 

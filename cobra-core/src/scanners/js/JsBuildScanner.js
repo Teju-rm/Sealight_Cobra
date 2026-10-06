@@ -57,6 +57,24 @@ class JsBuildScanner {
     return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   }
 
+  /**
+   * Whoever most recently edited this function's lines. git blame attributes
+   * per-line, so instead we use `git log -L`, which walks commit history for
+   * the line range and returns the most recent one directly — `-1` limits it
+   * to just that commit. Verified against a real multi-author test repo
+   * (original author, a one-line edit by someone else, and a brand-new
+   * function by a third person — all three attributed correctly).
+   */
+  _getAuthor(file, startLine, endLine) {
+    try {
+      const output = this._git(["log", "-L", `${startLine},${endLine}:${file}`, "-1", "--format=%an"]);
+      const firstLine = output.split("\n")[0].trim();
+      return firstLine || null;
+    } catch {
+      return null;
+    }
+  }
+
   diff(current, baseline) {
     const previous = allFunctions(baseline);
     const latest = allFunctions(current);
@@ -88,9 +106,9 @@ class JsBuildScanner {
     const { added, modified, removed } = this.diff(current, baseline);
 
     const changes = [
-      ...added.map((fn) => ({ file: fn.file, function: fn.name, startLine: fn.startLine, endLine: fn.endLine, status: "new" })),
-      ...modified.map((fn) => ({ file: fn.file, function: fn.name, startLine: fn.startLine, endLine: fn.endLine, status: "modified" })),
-      ...removed.map((fn) => ({ file: fn.file, function: fn.name, startLine: fn.startLine, endLine: fn.endLine, status: "deleted" })),
+      ...added.map((fn) => ({ file: fn.file, function: fn.name, startLine: fn.startLine, endLine: fn.endLine, status: "new", author: this._getAuthor(fn.file, fn.startLine, fn.endLine) })),
+      ...modified.map((fn) => ({ file: fn.file, function: fn.name, startLine: fn.startLine, endLine: fn.endLine, status: "modified", author: this._getAuthor(fn.file, fn.startLine, fn.endLine) })),
+      ...removed.map((fn) => ({ file: fn.file, function: fn.name, startLine: fn.startLine, endLine: fn.endLine, status: "deleted", author: null })),
     ];
 
     return { buildId, repo, commitSha, language: "javascript", changes };

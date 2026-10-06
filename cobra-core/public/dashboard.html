@@ -212,10 +212,11 @@
     if (untested.length === 0) {
       html += '<div class="empty-state">No untested changed code was reported.</div>';
     } else {
-      html += '<table><thead><tr><th>File</th><th>Function</th><th>Status</th></tr></thead><tbody>';
+      html += '<table><thead><tr><th>File</th><th>Function</th><th>Status</th><th>Author</th></tr></thead><tbody>';
       for (const c of untested) {
         html += '<tr><td>' + escapeHtml(c.file || '') + '</td><td>' + escapeHtml(c.function || '') + '</td>' +
-          '<td><span class="status-pill ' + escapeHtml(c.status || '') + '">' + escapeHtml(c.status || '') + '</span></td></tr>';
+          '<td><span class="status-pill ' + escapeHtml(c.status || '') + '">' + escapeHtml(c.status || '') + '</span></td>' +
+          '<td>' + escapeHtml(c.author || '—') + '</td></tr>';
       }
       html += '</tbody></table>';
     }
