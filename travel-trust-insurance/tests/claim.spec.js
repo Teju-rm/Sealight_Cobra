@@ -45,7 +45,7 @@ test.describe('Claims Flow Tests', () => {
     await page.getByLabel('Policy Number').fill('POL-000000');
     await page.getByRole('button', { name: /check status/i }).click();
 
-    await expect(page.getByText(/no claim found|not found/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/no claim record found|not found/i)).toBeVisible({ timeout: 5000 });
     await expect(page).toHaveURL(/\/claim-status/);
   });
 

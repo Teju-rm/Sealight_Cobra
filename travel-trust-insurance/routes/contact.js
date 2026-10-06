@@ -46,7 +46,7 @@ router.post('/', function submitContactHandler(req, res) {
 
     res.json({
       success: true,
-      message: 'Thank you for reaching! We will get back to you within 24 hours.',
+      message: 'Thank you for reaching out! We will get back to you within 24 hours.',
       contact
     });
   } catch (error) {
@@ -56,4 +56,3 @@ router.post('/', function submitContactHandler(req, res) {
 });
 
 module.exports = router;
-
