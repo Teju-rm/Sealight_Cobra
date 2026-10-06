@@ -1,7 +1,7 @@
 // src/server.js — temporary dev server for verifying risk.js locally.
 // Once the real project server.js exists, delete this file and instead
 // add these two lines to the real one's app.use(...) block:
-//   const createRiskRouter = require('./routes/risk');
+//   const createRiskRouter = require('./rconstoutes/risk');
 //   app.use(createRiskRouter(pool));
 const express = require('express');
 const pool = require('./db');
