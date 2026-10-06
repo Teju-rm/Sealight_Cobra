@@ -19,7 +19,7 @@ function evaluateRiskResponse(data) {
   const verdict = data.verdict;
   const untestedChanges = data.untestedChanges;
   const list = untestedChanges.map((change) =>
-    `  ${change.file ?? '(unknown file)'} â€” ${change.function ?? '(unknown function)'} [${change.status ?? 'unknown status'}]`
+    `  ${change.file ?? '(unknown file)'} - ${change.function ?? '(unknown function)'} [${change.status ?? 'unknown status'}]`
   ).join('\n');
 
   // "no_data" means the API has no registered changes for this build.
@@ -61,7 +61,7 @@ function evaluateRiskResponse(data) {
 }
 
 function fail(message) {
-  console.error(`\nâŒ RELEASE RISK CHECK FAILED\n${message}\n`);
+  console.error(`\n[FAIL] RELEASE RISK CHECK FAILED\n${message}\n`);
   console.error(`::error title=Quality Gate::${message.replace(/\r?\n/g, ' | ')}`);
   process.exitCode = 1;
 }
@@ -124,10 +124,10 @@ async function main() {
     return;
   }
 
-  const line = 'â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”';
+  const line = '========================================';
   if (result.shouldFail) {
     console.error(`\n${line}`);
-    console.error(`âŒ ${result.title}`);
+    console.error(`[FAIL] ${result.title}`);
     console.error(`Build: ${buildId}   Risk score: ${result.riskScore}   Verdict: ${result.verdict}`);
     console.error('Details:');
     console.error(result.message);
@@ -138,7 +138,7 @@ async function main() {
   }
 
   console.log(`\n${line}`);
-  console.log(`âœ… ${result.title}`);
+  console.log(`[PASS] ${result.title}`);
   console.log(`Build: ${buildId}   Risk score: ${result.riskScore}   Verdict: ${result.verdict}`);
   console.log(result.message);
   console.log(`${line}\n`);
