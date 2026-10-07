@@ -7,6 +7,7 @@ const createRiskRouter = require("./routes/risk");
 const createQualityGateRulesRouter = require("./routes/qualityGateRules");
 const createBuildsRouter = require("./routes/builds");
 const createGateSettingsRouter = require("./routes/gateSettings");
+const createTestSelectionRouter = require("./routes/testSelection");
 const path = require("path");
 const app = express();
 app.use(express.json({ limit: "5mb" }));
@@ -19,6 +20,7 @@ app.use(createRiskRouter(pool));
 app.use(createQualityGateRulesRouter(pool));
 app.use(createGateSettingsRouter(pool));
 app.use(createBuildsRouter(pool));
+app.use(createTestSelectionRouter(pool));
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
 console.log(`COBRA Ingestion API listening on :${PORT}`);
