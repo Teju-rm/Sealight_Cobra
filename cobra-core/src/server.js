@@ -6,14 +6,18 @@ const buildScanRoute = require("./routes/buildScan");
 const createRiskRouter = require("./routes/risk");
 const createQualityGateRulesRouter = require("./routes/qualityGateRules");
 const createBuildsRouter = require("./routes/builds");
+const createGateSettingsRouter = require("./routes/gateSettings");
+const path = require("path");
 const app = express();
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static(require("path").join(__dirname, "..", "public")));
+app.get("/test-optimization", (req, res) => res.sendFile(path.join(__dirname, "..", "public", "dashboard.html")));
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 app.use(ingestRoute);
 app.use(buildScanRoute);
 app.use(createRiskRouter(pool));
 app.use(createQualityGateRulesRouter(pool));
+app.use(createGateSettingsRouter(pool));
 app.use(createBuildsRouter(pool));
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

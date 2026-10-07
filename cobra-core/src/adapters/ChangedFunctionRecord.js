@@ -9,6 +9,10 @@ function validateBuildScan(payload) {
       errors.push(`${field} must be a non-empty string`);
     }
   }
+  if (payload.branch !== undefined && payload.branch !== null &&
+      (typeof payload.branch !== "string" || !payload.branch.trim())) {
+    errors.push("branch must be a non-empty string when provided");
+  }
 
   if (!Array.isArray(payload.changes)) {
     errors.push("changes must be an array");
@@ -19,6 +23,9 @@ function validateBuildScan(payload) {
       if (typeof entry.startLine !== "number") errors.push(`changes[${i}].startLine must be a number`);
       if (typeof entry.endLine !== "number") errors.push(`changes[${i}].endLine must be a number`);
       if (!STATUSES.has(entry.status)) errors.push(`changes[${i}].status must be one of ${[...STATUSES].join(", ")}`);
+      if (entry.author !== undefined && entry.author !== null && typeof entry.author !== "string") {
+        errors.push(`changes[${i}].author must be a string or null if present`);
+      }
     });
   }
 

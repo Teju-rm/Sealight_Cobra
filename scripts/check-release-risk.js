@@ -22,8 +22,8 @@ function evaluateRiskResponse(data) {
     `  ${change.file ?? '(unknown file)'} - ${change.function ?? '(unknown function)'} [${change.status ?? 'unknown status'}]`
   ).join('\n');
 
-  // "no_data" means the API has no registered changes for this build.
-  // That is NOT a verified pass, so it fails.
+  // "no_data" means the API has no registered changes or coverage for this
+  // build. That is NOT a verified pass, so it fails.
   if (verdict === 'no_data') {
     return {
       shouldFail: true,

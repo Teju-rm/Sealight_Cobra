@@ -17,7 +17,7 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.project || !args.build || !args.repo) {
-    console.error("Usage: --project <path> --build <buildId> --repo <name> [--base-ref HEAD~1] [--build-scan-url url]");
+    console.error("Usage: --project <path> --build <buildId> --repo <name> [--branch <name>] [--base-ref HEAD~1] [--build-scan-url url]");
     process.exit(1);
   }
 
@@ -34,6 +34,14 @@ async function main() {
 
   const scanner = new JsBuildScanner({ projectRoot });
   const payload = scanner.toChangedFunctionRecord({ buildId: args.build, repo: args.repo, commitSha, baseRef });
+  payload.branch = args.branch || process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || process.env.BRANCH_NAME || null;
+  if (!payload.branch) {
+    try {
+      payload.branch = execFileSync("git", ["branch", "--show-current"], { cwd: projectRoot, encoding: "utf8" }).trim() || null;
+    } catch {
+      payload.branch = null;
+    }
+  }
 
   console.log(`Comparing working tree against ${baseRef}...`);
   console.log(`  new:      ${payload.changes.filter((c) => c.status === "new").length}`);
@@ -41,8 +49,7 @@ async function main() {
   console.log(`  deleted:  ${payload.changes.filter((c) => c.status === "deleted").length}`);
 
   if (payload.changes.length === 0) {
-    console.log("No changes detected — nothing to submit.");
-    return;
+    console.log("No changes detected; submitting the build record and branch metadata.");
   }
 
   const result = await scanner.submit(payload, buildScanUrl);

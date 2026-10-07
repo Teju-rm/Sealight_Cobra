@@ -14,6 +14,7 @@
 // build-scan.js and ingest.js. This route only reads.
 
 const express = require('express');
+const { evaluateGateSettings, hasEnabledSettings } = require('../gateSettings');
 
 // Metrics a quality_gate_rules row can reference, computed per request.
 // Only metrics with real data behind them are supported. A rule naming an
@@ -33,15 +34,14 @@ const OPERATORS = {
 
 // Evaluates the pass/fail verdict for a build given its computed metrics
 // and whatever enabled quality_gate_rules exist for its repo.
-//   - No changed functions at all  -> "no_data" (regardless of rules —
-//     there is nothing to have passed or failed yet).
+//   - No changed functions or no coverage rows -> "no_data".
 //   - No enabled rules for repo    -> fallback to legacy behavior:
 //     pass only if there are zero untested changes.
 //   - Rules exist                  -> every enabled, evaluable rule must
 //     pass. A rule referencing an unsupported metric is skipped, not
 //     treated as a free pass.
-function evaluateVerdict({ totalChanged, untestedCount, metrics, rules }) {
-  if (totalChanged === 0) {
+function evaluateVerdict({ totalChanged, coverageRunCount, untestedCount, metrics, rules }) {
+  if (totalChanged === 0 || coverageRunCount === 0) {
     return { verdict: 'no_data', skippedRules: [] };
   }
 
@@ -71,20 +71,113 @@ function evaluateVerdict({ totalChanged, untestedCount, metrics, rules }) {
   return { verdict: allPass ? 'pass' : 'fail', skippedRules };
 }
 
+function contributorInitials(name) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => Array.from(part)[0] || "")
+    .join("")
+    .toUpperCase();
+}
+
+function groupFileRisks(changes, search) {
+  const matching = search
+    ? changes.filter((change) => `${change.file} ${change.function}`.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
+    : changes;
+  const files = new Map();
+
+  for (const change of matching) {
+    if (!files.has(change.file)) {
+      files.set(change.file, {
+        file: change.file,
+        qualityRisks: 0,
+        highPriority: 0,
+        contributorsByName: new Map(),
+        methods: [],
+      });
+    }
+    const file = files.get(change.file);
+    file.qualityRisks += 1;
+    if (change.status === "new" || change.status === "modified") file.highPriority += 1;
+    if (change.author) file.contributorsByName.set(change.author, contributorInitials(change.author));
+    file.methods.push({
+      name: change.function || "(Anonymous)",
+      line: change.startLine,
+      status: change.status,
+      author: change.author,
+    });
+  }
+
+  return Array.from(files.values())
+    .map(({ contributorsByName, ...file }) => ({
+      ...file,
+      contributors: Array.from(contributorsByName, ([name, initials]) => ({ name, initials })),
+    }))
+    .sort((left, right) => right.qualityRisks - left.qualityRisks || left.file.localeCompare(right.file))
+    .map((file) => ({
+      ...file,
+      methods: file.methods.sort((left, right) =>
+        (left.line ?? Number.MAX_SAFE_INTEGER) - (right.line ?? Number.MAX_SAFE_INTEGER)
+        || left.name.localeCompare(right.name)
+      ),
+    }));
+}
+
 function createRiskRouter(pool) {
   const router = express.Router();
 
   router.get('/risk/:buildId', async (req, res) => {
     const { buildId } = req.params;
+    const stage = typeof req.query.stage === "string" ? req.query.stage.trim().toLowerCase() : "all";
+    const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 200) : "";
+    if (stage && stage !== "all") {
+      return res.status(400).json({ error: "Only the all-stages view is available because named test stages are not stored" });
+    }
+    if (req.query.stage !== undefined && typeof req.query.stage !== "string") {
+      return res.status(400).json({ error: "stage must be a string" });
+    }
+    if (req.query.search !== undefined && typeof req.query.search !== "string") {
+      return res.status(400).json({ error: "search must be a string" });
+    }
 
     try {
       // 0. Resolve the build's repo — needed for both rule lookup and
-      //    overallCoverage, which is scoped per-repo, not per-build.
+      //    overallCoverage, which is scoped per-repo, not per-build, and
+      //    quality-gate settings, which are scoped to the build's branch.
       const buildResult = await pool.query(
-        `SELECT repo FROM builds WHERE build_id = $1`,
+        `SELECT b.repo, b.branch, b.created_at,
+                (
+                  SELECT previous.build_id
+                  FROM builds previous
+                  WHERE previous.repo = b.repo
+                    AND (previous.created_at, previous.build_id) < (b.created_at, b.build_id)
+                  ORDER BY previous.created_at DESC, previous.build_id DESC
+                  LIMIT 1
+                ) AS reference_build_id,
+                (
+                  SELECT previous.commit_sha
+                  FROM builds previous
+                  WHERE previous.repo = b.repo
+                    AND (previous.created_at, previous.build_id) < (b.created_at, b.build_id)
+                  ORDER BY previous.created_at DESC, previous.build_id DESC
+                  LIMIT 1
+                ) AS reference_commit_sha,
+                (
+                  SELECT previous.created_at
+                  FROM builds previous
+                  WHERE previous.repo = b.repo
+                    AND (previous.created_at, previous.build_id) < (b.created_at, b.build_id)
+                  ORDER BY previous.created_at DESC, previous.build_id DESC
+                  LIMIT 1
+                ) AS reference_created_at
+         FROM builds b
+         WHERE b.build_id = $1`,
         [buildId]
       );
-      const repo = buildResult.rows[0] ? buildResult.rows[0].repo : null;
+      const build = buildResult.rows[0];
+      const repo = build ? build.repo : null;
+      const branch = build?.branch || "";
 
       // 1. Untested changes: a changed_functions row is "untested" when the
       //    total hits across all matching coverage_runs rows is 0 — either
@@ -92,14 +185,14 @@ function createRiskRouter(pool) {
       //    with hits = 0 (e.g. V8 precise coverage records every loaded
       //    function, called or not).
       const untestedResult = await pool.query(
-        `SELECT cf.file, cf.function, cf.status
+        `SELECT cf.file, cf.function, cf.status, cf.start_line, cf.author
          FROM changed_functions cf
          LEFT JOIN coverage_runs cr
            ON cr.build_id = cf.build_id
           AND cr.file = cf.file
           AND cr.function = cf.function
          WHERE cf.build_id = $1
-         GROUP BY cf.file, cf.function, cf.status
+         GROUP BY cf.file, cf.function, cf.status, cf.start_line, cf.author
          HAVING COALESCE(SUM(cr.hits), 0) = 0`,
         [buildId]
       );
@@ -108,7 +201,13 @@ function createRiskRouter(pool) {
         file: row.file,
         function: row.function,
         status: row.status,
+        startLine: row.start_line ?? null,
+        author: row.author ?? null,
       }));
+      const fileGroups = groupFileRisks(untestedChanges, search);
+      const highPriorityCount = untestedChanges.filter(
+        (change) => change.status === "new" || change.status === "modified"
+      ).length;
 
       // 2. Test recommendations: distinct test_id in coverage_runs for this
       //    build whose (file, function) matches a changed_functions row for
@@ -144,12 +243,16 @@ function createRiskRouter(pool) {
 
       // 3. Risk score + code_changes_coverage (its complement, as a %).
       const totalResult = await pool.query(
-        `SELECT COUNT(*)::int AS total
+        `SELECT COUNT(*)::int AS total,
+                (SELECT COUNT(*)::int FROM coverage_runs WHERE build_id = $1) AS coverage_run_count
          FROM changed_functions
          WHERE build_id = $1`,
         [buildId]
       );
       const totalChanged = totalResult.rows[0].total;
+      const coverageRunCount = Number.isFinite(Number(totalResult.rows[0].coverage_run_count))
+        ? Number(totalResult.rows[0].coverage_run_count)
+        : undefined;
       const riskScore =
         totalChanged === 0
           ? 0
@@ -187,8 +290,23 @@ function createRiskRouter(pool) {
       //    to the legacy "any untested change = fail" behavior when no
       //    rules are configured, so existing callers see no change unless
       //    they've opted in by adding rules.
+      let settings = null;
+      if (repo && build?.created_at) {
+        const settingsResult = await pool.query(
+          `SELECT settings
+           FROM quality_gate_settings
+           WHERE app = $1 AND (branch = $2 OR branch = '')
+             AND effective_at <= $3
+           ORDER BY CASE WHEN branch = $2 THEN 0 ELSE 1 END,
+                    effective_at DESC, id DESC
+           LIMIT 1`,
+          [repo, branch, build.created_at]
+        );
+        settings = settingsResult.rows[0]?.settings || null;
+      }
+
       let rules = [];
-      if (repo) {
+      if (repo && !hasEnabledSettings(settings)) {
         const rulesResult = await pool.query(
           `SELECT metric, operator, threshold
            FROM quality_gate_rules
@@ -201,10 +319,30 @@ function createRiskRouter(pool) {
       const metrics = {
         code_changes_coverage: codeChangesCoverage,
         overall_coverage: overallCoverage,
+        failed_tests: null,
       };
 
-      const { verdict, skippedRules } = evaluateVerdict({
+      const configuredGate = evaluateGateSettings({
+        settings,
         totalChanged,
+        coverageRunCount,
+        metrics,
+      });
+      const { verdict, skippedRules } = configuredGate
+        ? {
+            verdict: configuredGate.status === 'passed'
+              ? 'pass'
+              : configuredGate.status === 'no_data'
+                ? 'no_data'
+                : 'fail',
+            skippedRules: configuredGate.unavailableConditions.map((condition) => ({
+              metric: condition,
+              reason: 'required data is not available',
+            })),
+          }
+        : evaluateVerdict({
+        totalChanged,
+        coverageRunCount,
         untestedCount: untestedChanges.length,
         metrics,
         rules,
@@ -212,11 +350,29 @@ function createRiskRouter(pool) {
 
       const response = {
         buildId,
+        build: build
+          ? {
+              app: repo,
+              branch: build.branch || null,
+              createdAt: build.created_at,
+              referenceBuild: build.reference_build_id
+                ? {
+                    buildId: build.reference_build_id,
+                    commitSha: build.reference_commit_sha,
+                    createdAt: build.reference_created_at,
+                  }
+                : null,
+            }
+          : null,
         untestedChanges,
+        fileGroups,
+        qualityRiskCount: untestedChanges.length,
+        highPriorityCount,
         testRecommendations,
         riskScore,
         overallCoverage,
         verdict,
+        dataAvailability: { branch: Boolean(build?.branch), namedTestStages: false, contributors: "per-function author when stored" },
       };
       // Only included when a configured rule couldn't be evaluated, so the
       // normal response shape stays unchanged for repos with no such issue.

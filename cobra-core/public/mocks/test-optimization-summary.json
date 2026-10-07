@@ -1,0 +1,27 @@
+{
+  "savingsPercent": 32.0,
+  "apps": [
+    {
+      "app": "cobra-core",
+      "status": "On",
+      "computeTimeSec": 46800,
+      "savingsSec": 16660,
+      "potentialSavingsSec": 16660,
+      "stages": [
+        { "stage": "Unit", "status": "On", "fullSuiteTimeSec": 28800, "recommendedTestsTimeSec": 18720, "timeSavedSec": 10080, "testsSkipped": 214 },
+        { "stage": "Integration", "status": "On", "fullSuiteTimeSec": 18000, "recommendedTestsTimeSec": 11420, "timeSavedSec": 6580, "testsSkipped": 37 }
+      ]
+    },
+    {
+      "app": "travel-trust-insurance",
+      "status": "Partially on",
+      "computeTimeSec": 172800,
+      "savingsSec": 53640,
+      "potentialSavingsSec": 54000,
+      "stages": [
+        { "stage": "Unit", "status": "On", "fullSuiteTimeSec": 86400, "recommendedTestsTimeSec": 36000, "timeSavedSec": 50400, "testsSkipped": 127 },
+        { "stage": "Browser", "status": "Off", "fullSuiteTimeSec": 86400, "recommendedTestsTimeSec": 86160, "timeSavedSec": 240, "testsSkipped": 1 }
+      ]
+    }
+  ]
+}

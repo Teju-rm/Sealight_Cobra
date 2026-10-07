@@ -5,7 +5,7 @@
 -- of the legacy "any untested change = fail" behavior. See risk.js for the
 -- supported metric names (code_changes_coverage, overall_coverage).
 
-CREATE TABLE quality_gate_rules (
+CREATE TABLE IF NOT EXISTS quality_gate_rules (
 id         SERIAL PRIMARY KEY,
 repo       TEXT NOT NULL,
 metric     TEXT NOT NULL,        -- e.g. 'code_changes_coverage', 'overall_coverage'
@@ -15,5 +15,5 @@ enabled    BOOLEAN NOT NULL DEFAULT true,
 created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_quality_gate_rules_repo_enabled
+CREATE INDEX IF NOT EXISTS idx_quality_gate_rules_repo_enabled
 ON quality_gate_rules (repo, enabled);
