@@ -6,7 +6,7 @@ const { pool } = require("./pool");
 async function init() {
   const schema = fs.readFileSync(path.join(__dirname, "schema.sql"), "utf8");
   await pool.query(schema);
-  console.log("Schema applied: builds, changed_functions, coverage_runs");
+  console.log("Schema applied: builds, test_runs, test_executions, changed_functions, coverage_runs");
   await pool.end();
 }
 

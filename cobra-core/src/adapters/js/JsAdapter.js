@@ -36,6 +36,8 @@ class JsAdapter extends CoverageAdapter {
         executedAt: record.startedAt,
         environment: record.environment,
       };
+      const runId = record.runId || context.runId;
+      if (runId) payload.execution.runId = runId;
     }
     return payload;
   }

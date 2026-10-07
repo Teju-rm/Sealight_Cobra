@@ -59,6 +59,48 @@ The response must also be valid JSON, and the HTTP request must succeed with an 
 
 `testId` identifies the logical test; `execution.id` identifies one attempt and may differ across builds or retries. When execution metadata is supplied, its fields are validated and the execution plus its coverage rows are persisted transactionally. Legacy payloads may omit `execution`; their coverage rows have no execution link. Apply `migrations/006_test_executions.sql` before sending execution metadata.
 
+## Test execution runs
+
+`POST /test-runs` explicitly creates a run in `running` state. It accepts `id`, `buildId`, `suite`, and `environment`, with optional `startedAt`; the run branch is copied from its build. `PATCH /test-runs/:runId` accepts a lifecycle `status` (`running`, `completed`, `failed`, or `cancelled`) and optional `completedAt`. A terminal state receives a completion timestamp if one is not supplied; terminal runs cannot transition to another status. Only explicitly completed runs can later serve as full-suite baselines.
+
+An execution may optionally include `execution.runId`, for example:
+
+```json
+{
+  "buildId": "build-123",
+  "testId": "CI > quote submission",
+  "language": "javascript",
+  "execution": {
+    "id": "execution-123",
+    "runId": "run-456",
+    "suite": "unit",
+    "status": "passed",
+    "durationMs": 1250,
+    "executedAt": "2026-10-07T12:30:00.000Z",
+    "environment": "CI"
+  },
+  "coverage": []
+}
+```
+
+When present, ingestion requires that the run exists and matches the execution's build, suite, and environment. Executions without `runId` remain supported, and existing coverage payloads without execution metadata are unchanged. Apply `migrations/007_test_execution_runs.sql` before creating runs or sending run-associated executions.
+
+## Test time-savings estimate
+
+`GET /test-selection/:buildId/savings` estimates potential execution time saved by running the historically selected tests instead of the baseline suite. It requires an explicitly `completed` run from an earlier build in the same repository. The newest completed run with eligible executions on the target branch is preferred; if none exists, the newest eligible completed run across branches is used. If completed runs exist but none has eligible executions, the endpoint reports insufficient data.
+
+The estimate uses only executions linked to that baseline run. Passed, failed, and timed-out attempts with valid durations count; skipped and interrupted attempts are excluded and reported. Repeated attempts for a logical test are represented by their median duration. If the baseline has no eligible executions, has zero total duration, or a selected test is missing an eligible duration, the endpoint returns `status: "insufficient_data"` and null savings values.
+
+This is an estimated sum of test execution durations, not guaranteed wall-clock savings; it does not model parallel execution or runner overhead. The endpoint is read-only and does not alter run, execution, or coverage data.
+
+## Test optimization result
+
+`GET /test-selection/:buildId/optimization` combines the historical test selection with baseline test durations, unselected eligible baseline tests, uncovered changed functions, and estimated potential time savings. It uses the same repository, historical cutoff, positive-hit function matching, and same-branch preference/cross-branch fallback as `GET /test-selection/:buildId`. Deleted functions are never used to select tests and are reported among uncovered changes.
+
+The baseline is selected using the same rules as the savings endpoint: the newest eligible explicitly completed run from an earlier build in the same repository, preferring the target branch and falling back across branches. Only `passed`, `failed`, and `timedOut` executions with valid durations count; `skipped` and `interrupted` executions are excluded and reported. Repeated attempts are represented by the median duration per logical test. Selected and unselected tests are disjoint; unselected tests are eligible baseline tests not selected by historical changed-function coverage.
+
+Missing selected-test durations, no completed baseline, no eligible execution data, invalid aggregate duration, no changed functions, or no selected tests produce `status: "insufficient_data"` with a reason and null duration totals. This optimization is an estimate based on summed test durations, not guaranteed wall-clock savings; it does not model parallel execution or runner overhead. The endpoint is read-only.
+
 ## Quality Risks view
 
 `GET /risk/:buildId?stage=all&search=<text>` also returns build context and file-level risk groups for the dashboard. `fileGroups` contains each matching file's untested-method count (`qualityRisks`), high-priority count (`highPriority`, untested new or modified methods), contributor names and initials, and expandable method names/line numbers. Groups sort by risk count descending. `search` matches file and method names but does not change the full-build `untestedChanges`, counts, risk score, or gate verdict used by CI. Named stage filtering is not available until stage data is persisted; values other than `all` return HTTP 400.

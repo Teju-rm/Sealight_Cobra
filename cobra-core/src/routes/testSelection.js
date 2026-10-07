@@ -1,4 +1,5 @@
 const express = require("express");
+const { loadHistoricalCoverage } = require("./historicalTestSelectionData");
 
 function functionKey(file, functionName) {
   return JSON.stringify([file, functionName]);
@@ -43,35 +44,7 @@ module.exports = function createTestSelectionRouter(pool) {
         }
       }
 
-      const historyResult = await pool.query(
-        `SELECT cr.test_id, cr.file, cr.function, cr.build_id AS historical_build_id,
-                historical.branch AS historical_branch,
-                cr.execution_id,
-                te.suite AS execution_suite,
-                te.status AS execution_status,
-                te.duration_ms AS execution_duration_ms,
-                te.executed_at AS execution_executed_at,
-                te.environment AS execution_environment
-         FROM coverage_runs cr
-         JOIN builds historical ON historical.build_id = cr.build_id
-         JOIN changed_functions cf
-           ON cf.build_id = $1
-          AND cf.file = cr.file
-          AND cf.function = cr.function
-          AND cf.status <> 'deleted'
-         LEFT JOIN test_executions te ON te.id = cr.execution_id
-         WHERE cr.build_id <> $1
-           AND historical.repo = $2
-           AND historical.created_at < $3
-           AND cr.hits > 0`,
-        [buildId, build.repo, build.created_at],
-      );
-
-      const sameBranchRows = historyResult.rows.filter(
-        (row) => row.historical_branch === build.branch,
-      );
-      const usedFallback = sameBranchRows.length === 0 && historyResult.rows.length > 0;
-      const selectedRows = usedFallback ? historyResult.rows : sameBranchRows;
+      const { rows: selectedRows, branchStrategy } = await loadHistoricalCoverage(pool, buildId, build);
       const selectedTests = new Map();
 
       for (const row of selectedRows) {
@@ -132,7 +105,7 @@ module.exports = function createTestSelectionRouter(pool) {
         buildId: build.build_id,
         repo: build.repo,
         branch: build.branch || null,
-        branchStrategy: usedFallback ? "cross_branch_fallback" : "same_branch",
+        branchStrategy,
         selectedTests: selectedTestsResponse,
         uncoveredFunctions,
         summary: {

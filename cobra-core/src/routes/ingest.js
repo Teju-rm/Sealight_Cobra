@@ -21,13 +21,45 @@ function createIngestRouter(databasePool) {
       );
 
       if (execution) {
+        let runId = null;
+        if (execution.runId) {
+          const runResult = await client.query(
+            `SELECT id, build_id, suite, environment, status
+             FROM test_runs
+             WHERE id = $1
+             FOR SHARE`,
+            [execution.runId],
+          );
+          const run = runResult.rows[0];
+          if (!run) {
+            await client.query("ROLLBACK");
+            return res.status(400).json({ error: "execution.runId does not reference an existing test run" });
+          }
+          if (run.status !== "running") {
+            await client.query("ROLLBACK");
+            return res.status(400).json({
+              error: `execution.runId references a terminal test run (${run.status})`,
+            });
+          }
+          if (run.build_id !== buildId) {
+            await client.query("ROLLBACK");
+            return res.status(400).json({ error: "execution.runId belongs to a different build" });
+          }
+          if (run.suite !== execution.suite || run.environment !== execution.environment) {
+            await client.query("ROLLBACK");
+            return res.status(400).json({ error: "execution suite and environment must match the referenced test run" });
+          }
+          runId = run.id;
+        }
+
         await client.query(
           `INSERT INTO test_executions
-             (id, build_id, test_id, suite, status, duration_ms, executed_at, environment)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+             (id, build_id, run_id, test_id, suite, status, duration_ms, executed_at, environment)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [
             execution.id,
             buildId,
+            runId,
             testId,
             execution.suite,
             execution.status,
@@ -63,6 +95,7 @@ function createIngestRouter(databasePool) {
         buildId,
         testId,
         executionId: execution?.id ?? null,
+        runId: execution?.runId ?? null,
         rows: coverage.length,
       });
     } catch (err) {

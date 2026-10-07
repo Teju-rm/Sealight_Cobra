@@ -21,12 +21,13 @@ const execution = {
   environment: "CI",
 };
 
-function createServer({ queryHook } = {}) {
+function createServer({ queryHook, runRows = [] } = {}) {
   const queries = [];
   const client = {
     async query(text, values) {
       queries.push({ text, values });
       if (queryHook) await queryHook(text, values);
+      if (text.includes("FROM test_runs")) return { rows: runRows };
       return { rows: [] };
     },
     release() {},
@@ -58,6 +59,7 @@ test("ingestion creates a test execution with duration and links coverage rows",
   assert.deepEqual(executionInsert.values, [
     execution.id,
     "build-1",
+    null,
     "CI > quote submission",
     "CI",
     "passed",
@@ -95,7 +97,7 @@ test("the same logical test can have distinct executions across builds", async (
   assert.equal(first.status, 201);
   assert.equal(second.status, 201);
   const executionInserts = queries.filter(({ text }) => text.includes("INSERT INTO test_executions"));
-  assert.deepEqual(executionInserts.map(({ values }) => [values[0], values[1], values[2]]), [
+  assert.deepEqual(executionInserts.map(({ values }) => [values[0], values[1], values[3]]), [
     ["execution-build-1", "build-1", "CI > quote submission"],
     ["execution-build-2", "build-2", "CI > quote submission"],
   ]);
@@ -113,6 +115,116 @@ test("legacy coverage payloads remain valid and store no execution link", async 
   assert.equal(queries.some(({ text }) => text.includes("INSERT INTO test_executions")), false);
   const coverageInsert = queries.find(({ text }) => text.includes("INSERT INTO coverage_runs"));
   assert.equal(coverageInsert.values[1], null);
+});
+
+test("execution can reference a matching test run", async () => {
+  const run = {
+    id: "run-1",
+    build_id: "build-1",
+    suite: execution.suite,
+    environment: execution.environment,
+    status: "running",
+  };
+  const { app, queries } = createServer({ runRows: [run] });
+  const response = await request(app).post("/ingest").send(payload({
+    execution: { ...execution, runId: run.id },
+  }));
+
+  assert.equal(response.status, 201);
+  const runLookup = queries.find(({ text }) => text.includes("FROM test_runs"));
+  assert.deepEqual(runLookup.values, [run.id]);
+  const executionInsert = queries.find(({ text }) => text.includes("INSERT INTO test_executions"));
+  assert.equal(executionInsert.values[2], run.id);
+});
+
+test("execution is accepted for a running test run", async () => {
+  const { app } = createServer({
+    runRows: [{
+      id: "running-run",
+      build_id: "build-1",
+      suite: execution.suite,
+      environment: execution.environment,
+      status: "running",
+    }],
+  });
+  const response = await request(app).post("/ingest").send(payload({
+    execution: { ...execution, runId: "running-run" },
+  }));
+
+  assert.equal(response.status, 201);
+});
+
+test("execution is rejected for every terminal test-run status", async () => {
+  for (const status of ["completed", "failed", "cancelled"]) {
+    const run = {
+      id: `${status}-run`,
+      build_id: "build-1",
+      suite: execution.suite,
+      environment: execution.environment,
+      status,
+    };
+    const { app, queries } = createServer({ runRows: [run] });
+    const response = await request(app).post("/ingest").send(payload({
+      execution: { ...execution, runId: run.id },
+    }));
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.error, `execution.runId references a terminal test run (${status})`);
+    assert.equal(queries.some(({ text }) => text.includes("INSERT INTO test_executions")), false);
+    assert.equal(queries.some(({ text }) => text.includes("INSERT INTO coverage_runs")), false);
+    assert.equal(queries.at(-1).text, "ROLLBACK");
+  }
+});
+
+test("execution rejects a missing or unrelated test run", async () => {
+  const invalidAssociations = [
+    { runRows: [], runId: "missing-run", buildId: "build-1" },
+    {
+      runRows: [{
+        id: "other-build-run",
+        build_id: "build-2",
+        suite: execution.suite,
+        environment: execution.environment,
+        status: "running",
+      }],
+      runId: "other-build-run",
+      buildId: "build-1",
+    },
+    {
+      runRows: [{
+        id: "other-suite-run",
+        build_id: "build-1",
+        suite: "integration",
+        environment: execution.environment,
+        status: "running",
+      }],
+      runId: "other-suite-run",
+      buildId: "build-1",
+    },
+  ];
+
+  for (const invalid of invalidAssociations) {
+    const { app, queries } = createServer({ runRows: invalid.runRows });
+    const response = await request(app).post("/ingest").send(payload({
+      buildId: invalid.buildId,
+      execution: { ...execution, runId: invalid.runId },
+    }));
+    assert.equal(response.status, 400);
+    assert.equal(queries.some(({ text }) => text.includes("INSERT INTO test_executions")), false);
+    assert.equal(queries.some(({ text }) => text === "ROLLBACK"), true);
+  }
+});
+
+test("execution rejects an invalid runId and legacy execution payload remains valid", async () => {
+  const invalid = validateUCF(payload({ execution: { ...execution, runId: "  " } }));
+  assert.equal(invalid.valid, false);
+  assert.match(invalid.errors.join(" "), /execution\.runId/);
+
+  const { app, queries } = createServer();
+  const response = await request(app).post("/ingest").send(payload({ execution }));
+  assert.equal(response.status, 201);
+  const executionInsert = queries.find(({ text }) => text.includes("INSERT INTO test_executions"));
+  assert.equal(executionInsert.values[2], null);
 });
 
 test("invalid execution duration and status are rejected before persistence", async () => {
@@ -149,6 +261,7 @@ test("JavaScript adapter maps local test artifact execution metadata into the in
   const adapter = new JsAdapter({ projectRoot: process.cwd() });
   const result = adapter.toUCF({
     executionId: "execution-1",
+    runId: "run-1",
     testDescription: "CI > quote submission",
     testName: "quote submission",
     testSuite: "CI",
@@ -160,6 +273,7 @@ test("JavaScript adapter maps local test artifact execution metadata into the in
 
   assert.deepEqual(result.execution, {
     id: "execution-1",
+    runId: "run-1",
     suite: "CI",
     status: "passed",
     durationMs: 1250,

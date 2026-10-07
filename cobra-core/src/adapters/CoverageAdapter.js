@@ -43,6 +43,10 @@ function validateUCF(payload) {
           errors.push(`execution.${field} must be a non-empty string`);
         }
       }
+      if (execution.runId !== undefined && execution.runId !== null &&
+          (typeof execution.runId !== "string" || !execution.runId.trim())) {
+        errors.push("execution.runId must be a non-empty string when provided");
+      }
       if (!EXECUTION_STATUSES.has(execution.status)) {
         errors.push(`execution.status must be one of ${[...EXECUTION_STATUSES].join(", ")}`);
       }
