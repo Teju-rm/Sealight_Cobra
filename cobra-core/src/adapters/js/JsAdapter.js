@@ -26,7 +26,18 @@ class JsAdapter extends CoverageAdapter {
       ...this._extractLayer(record.coverage?.backend, "backend", record.siteOrigin),
     ];
 
-    return { buildId, testId, language: "javascript", coverage };
+    const payload = { buildId, testId, language: "javascript", coverage };
+    if (record.executionId) {
+      payload.execution = {
+        id: record.executionId,
+        suite: record.testSuite,
+        status: record.status,
+        durationMs: record.durationMs,
+        executedAt: record.startedAt,
+        environment: record.environment,
+      };
+    }
+    return payload;
   }
 
   _extractLayer(rawScripts, layer, siteOrigin) {

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { randomUUID } = require('crypto');
 const { test: base } = require('@playwright/test');
 
 const baseUrl = process.env.COVERAGE_BASE_URL || 'http://127.0.0.1:3100';
@@ -60,11 +61,13 @@ const test = base.extend({
         fs.mkdirSync(artifactDirectory, { recursive: true });
         const files = [...browserFiles(rawBrowserCoverage), ...backendFiles(rawBackendCoverage)];
         const record = {
+          executionId: randomUUID(),
           testName: testInfo.title,
           testDescription: testInfo.titlePath.join(' > '),
           testSuite: 'CI',
           environment: process.env.COVERAGE_ENVIRONMENT || 'Development',
           buildVersion: process.env.BUILD_VERSION || 'local',
+          durationMs: testInfo.duration,
           siteOrigin: process.env.COVERAGE_HISTORY_ORIGIN || new URL(baseUrl).origin,
           startedAt,
           stoppedAt: new Date().toISOString(),

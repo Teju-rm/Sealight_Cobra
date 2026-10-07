@@ -1,3 +1,5 @@
+const EXECUTION_STATUSES = new Set(["passed", "failed", "timedOut", "skipped", "interrupted"]);
+
 class CoverageAdapter {
   parseNativeReport(filePath) {
     throw new Error("parseNativeReport() not implemented");
@@ -31,6 +33,29 @@ function validateUCF(payload) {
     }
   }
 
+  if (payload.execution !== undefined && payload.execution !== null) {
+    const execution = payload.execution;
+    if (typeof execution !== "object" || Array.isArray(execution)) {
+      errors.push("execution must be an object");
+    } else {
+      for (const field of ["id", "suite", "environment"]) {
+        if (typeof execution[field] !== "string" || !execution[field].trim()) {
+          errors.push(`execution.${field} must be a non-empty string`);
+        }
+      }
+      if (!EXECUTION_STATUSES.has(execution.status)) {
+        errors.push(`execution.status must be one of ${[...EXECUTION_STATUSES].join(", ")}`);
+      }
+      if (!Number.isSafeInteger(execution.durationMs) || execution.durationMs < 0) {
+        errors.push("execution.durationMs must be a non-negative safe integer");
+      }
+      if (typeof execution.executedAt !== "string" || !execution.executedAt.trim() ||
+          !Number.isFinite(Date.parse(execution.executedAt))) {
+        errors.push("execution.executedAt must be a valid timestamp");
+      }
+    }
+  }
+
   if (!Array.isArray(payload.coverage)) {
     errors.push("coverage must be an array");
   } else {
@@ -46,4 +71,4 @@ function validateUCF(payload) {
   return { valid: errors.length === 0, errors };
 }
 
-module.exports = { CoverageAdapter, validateUCF };
+module.exports = { CoverageAdapter, EXECUTION_STATUSES, validateUCF };

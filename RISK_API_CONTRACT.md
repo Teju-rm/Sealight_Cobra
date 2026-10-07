@@ -36,6 +36,29 @@ When untested changes exist, the checker prints their `file`, `function`, and `s
 
 The response must also be valid JSON, and the HTTP request must succeed with an OK status. The checker fails on an unreachable API, a non-OK response, invalid JSON, or a missing/non-array `untestedChanges` field.
 
+## Coverage execution ingestion
+
+`POST /ingest` accepts the existing `buildId`, `testId`, `language`, and `coverage` fields, plus optional `execution` metadata:
+
+```json
+{
+  "buildId": "build-123",
+  "testId": "CI > quote submission",
+  "language": "javascript",
+  "execution": {
+    "id": "execution-unique-to-this-attempt",
+    "suite": "CI",
+    "status": "passed",
+    "durationMs": 1250,
+    "executedAt": "2026-10-07T12:30:00.000Z",
+    "environment": "CI"
+  },
+  "coverage": []
+}
+```
+
+`testId` identifies the logical test; `execution.id` identifies one attempt and may differ across builds or retries. When execution metadata is supplied, its fields are validated and the execution plus its coverage rows are persisted transactionally. Legacy payloads may omit `execution`; their coverage rows have no execution link. Apply `migrations/006_test_executions.sql` before sending execution metadata.
+
 ## Quality Risks view
 
 `GET /risk/:buildId?stage=all&search=<text>` also returns build context and file-level risk groups for the dashboard. `fileGroups` contains each matching file's untested-method count (`qualityRisks`), high-priority count (`highPriority`, untested new or modified methods), contributor names and initials, and expandable method names/line numbers. Groups sort by risk count descending. `search` matches file and method names but does not change the full-build `untestedChanges`, counts, risk score, or gate verdict used by CI. Named stage filtering is not available until stage data is persisted; values other than `all` return HTTP 400.

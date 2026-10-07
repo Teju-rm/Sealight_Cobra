@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const { pool } = require("./db/pool");
-const ingestRoute = require("./routes/ingest");
+const createIngestRouter = require("./routes/ingest");
 const buildScanRoute = require("./routes/buildScan");
 const createRiskRouter = require("./routes/risk");
 const createQualityGateRulesRouter = require("./routes/qualityGateRules");
@@ -13,7 +13,7 @@ app.use(express.json({ limit: "5mb" }));
 app.use(express.static(require("path").join(__dirname, "..", "public")));
 app.get("/test-optimization", (req, res) => res.sendFile(path.join(__dirname, "..", "public", "dashboard.html")));
 app.get("/health", (req, res) => res.json({ status: "ok" }));
-app.use(ingestRoute);
+app.use(createIngestRouter(pool));
 app.use(buildScanRoute);
 app.use(createRiskRouter(pool));
 app.use(createQualityGateRulesRouter(pool));
