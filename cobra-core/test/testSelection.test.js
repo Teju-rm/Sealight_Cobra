@@ -521,6 +521,43 @@ test("GET /test-gaps prefers same-branch history when any same-branch rows exist
   }]);
 });
 
+test("GET /test-gaps reports no historical coverage when no relevant rows exist", async () => {
+  const { app } = createApp({ changes: [changedFunctions[0]], history: [] });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.branchStrategy, "no_historical_coverage");
+  assert.equal(response.body.summary.coveredChangedFunctions, 0);
+  assert.equal(response.body.summary.gaps, 1);
+});
+
+test("GET /test-gaps reports branch unknown when selected historical branch data is unrecorded", async () => {
+  const targetWithoutBranch = { ...targetBuild, branch: null };
+  const unrecordedHistory = historicalRow({
+    historical_branch: null,
+  });
+  const targetWithBranchUnrecordedHistory = createApp({
+    changes: [changedFunctions[0]],
+    history: [unrecordedHistory],
+  });
+  const responseWithTargetBranch = await request(targetWithBranchUnrecordedHistory.app)
+    .get("/test-gaps/target-build");
+
+  assert.equal(responseWithTargetBranch.body.branchStrategy, "branch_unknown");
+  assert.equal(responseWithTargetBranch.body.summary.coveredChangedFunctions, 1);
+
+  const targetWithoutBranchApp = createApp({
+    build: targetWithoutBranch,
+    changes: [changedFunctions[0]],
+    history: [unrecordedHistory],
+  });
+  const responseWithoutTargetBranch = await request(targetWithoutBranchApp.app)
+    .get("/test-gaps/target-build");
+
+  assert.equal(responseWithoutTargetBranch.body.branchStrategy, "branch_unknown");
+  assert.equal(responseWithoutTargetBranch.body.summary.coveredChangedFunctions, 1);
+});
+
 test("GET /test-gaps returns 404 when the target build does not exist", async () => {
   const { app, queries } = createApp({ build: null });
   const response = await request(app).get("/test-gaps/missing");

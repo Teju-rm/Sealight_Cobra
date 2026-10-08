@@ -174,8 +174,24 @@ module.exports = function createTestSelectionRouter(pool) {
         }
       }
 
-      const { rows: historicalRows, branchStrategy } =
+      const { rows: historicalRows } =
         await loadHistoricalCoverage(pool, buildId, build, ["new", "modified"]);
+      const hasRecordedTargetBranch = typeof build.branch === "string" && build.branch.trim() !== "";
+      const hasSameBranchCoverage = hasRecordedTargetBranch && historicalRows.some(
+        (row) => row.historical_branch === build.branch,
+      );
+      const hasKnownCrossBranchCoverage = hasRecordedTargetBranch && historicalRows.some(
+        (row) => typeof row.historical_branch === "string"
+          && row.historical_branch.trim() !== ""
+          && row.historical_branch !== build.branch,
+      );
+      const branchStrategy = historicalRows.length === 0
+        ? "no_historical_coverage"
+        : hasSameBranchCoverage
+          ? "same_branch"
+          : hasKnownCrossBranchCoverage
+            ? "cross_branch_fallback"
+            : "branch_unknown";
       const coveredFunctionKeys = new Set(
         historicalRows.map((row) => functionKey(row.file, row.function)),
       );

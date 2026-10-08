@@ -20,6 +20,8 @@
     const strategyLabels = {
       same_branch: 'Same branch',
       cross_branch_fallback: 'Cross-branch fallback',
+      no_historical_coverage: 'No matching historical coverage',
+      branch_unknown: 'Branch unknown',
     };
     const branchStrategy = strategyLabels[data.branchStrategy] || data.branchStrategy;
     const metrics = [

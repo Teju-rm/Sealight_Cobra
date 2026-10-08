@@ -93,6 +93,18 @@ test('historical test gaps render an explicit empty state', () => {
   assert.doesNotMatch(html, /<thead>/);
 });
 
+test('historical test gaps gives branch strategy states accurate labels', () => {
+  for (const [branchStrategy, label] of [
+    ['same_branch', 'Same branch'],
+    ['cross_branch_fallback', 'Cross-branch fallback'],
+    ['no_historical_coverage', 'No matching historical coverage'],
+    ['branch_unknown', 'Branch unknown'],
+  ]) {
+    const html = render({ branchStrategy, summary: {}, gaps: [] });
+    assert.ok(html.includes(label), `expected ${branchStrategy} to render as ${label}`);
+  }
+});
+
 test('historical test gaps render a retryable API error state', () => {
   const html = renderError('Build not found HTTP 404.');
 
