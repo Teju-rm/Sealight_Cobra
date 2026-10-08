@@ -144,6 +144,19 @@
     .table-sort:hover { color: var(--blue); }
     .risk-build-select { min-width: 240px; }
     .risk-stage-unavailable { color: var(--muted); font-size: 11px; }
+    .test-gap-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+    .test-gap-card { padding: 17px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); }
+    .test-gap-value { display: block; color: #22334c; font-size: 28px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .test-gap-label { display: block; margin-top: 5px; color: #536174; font-size: 12px; font-weight: 700; }
+    .test-gap-meta { display: flex; flex-wrap: wrap; gap: 7px 20px; margin-top: 10px; color: var(--muted); font-size: 13px; }
+    .test-gap-meta strong { color: #334155; }
+    .test-gap-explanation { margin: 0 0 12px; padding: 10px 12px; color: #59677a; background: #f1f5f9; border: 1px solid var(--line); border-radius: 7px; font-size: 12px; }
+    .test-gap-table { min-width: 820px; }
+    .test-gap-table td { overflow-wrap: anywhere; }
+    .test-gap-reason { color: #536174; }
+    @media (max-width: 760px) {
+      .test-gap-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     .sample-badge { display: inline-flex; align-items: center; min-height: 23px; padding: 3px 8px; color: #526071; background: #edf0f3; border: 1px solid #d6dce3; border-radius: 12px; font-size: 11px; font-weight: 750; }
     .optimization-banner { display: flex; flex: 0 1 650px; align-items: center; justify-content: space-between; gap: 18px; margin: 0 0 0 auto; padding: 16px 18px; color: #17422f; background: #e8f5ee; border: 1px solid #cce7d7; border-radius: 10px; }
     .optimization-banner strong { font-size: 18px; }
@@ -197,6 +210,7 @@
     <nav class="nav" aria-label="Primary navigation">
       <a href="/dashboard.html" aria-current="page">Coverage Dashboard</a>
       <a href="/dashboard.html?screen=risks" id="riskNavLink">Quality Risks</a>
+      <a href="/dashboard.html?screen=test-gaps" id="testGapsNavLink">Historical Test Gaps</a>
       <a href="/tga" aria-disabled="true" title="Available in a later phase">TGA Report</a>
       <a href="/test-optimization" id="optimizationNavLink">Test Optimization</a>
     </nav>
@@ -251,6 +265,7 @@
   <footer>COBRA · Build-level coverage and release confidence</footer>
 
   <script src="/js/api.js"></script>
+  <script src="/js/test-gaps-view.js"></script>
   <script>
     (() => {
       const main = document.getElementById('main');
@@ -437,6 +452,7 @@
           '<td data-col="actions"><div class="row-actions">' +
             '<button type="button" class="icon-button" data-action="settings" title="Coverage settings" aria-label="Coverage settings for ' + escapeHtml(build.repo || 'app') + '">⚙</button>' +
             '<button type="button" class="icon-button" data-action="download" title="Download build summary as CSV" aria-label="Download CSV for build ' + buildId + '">⇩</button>' +
+            '<button type="button" class="icon-button" data-action="test-gaps" title="View historical test gaps" aria-label="View historical test gaps for build ' + buildId + '">◷</button>' +
             '<button type="button" class="icon-button" data-action="risks" title="View risks" aria-label="View risks for build ' + buildId + '">!</button>' +
           '</div></td>' +
         '</tr><tr class="detail-row" data-detail-for="' + index + '" hidden><td colspan="9"><div class="detail-content"></div></td></tr>';
@@ -521,6 +537,9 @@
             else if (button.dataset.action === 'coverage') toggleDetails(row, 'stages');
             else if (button.dataset.action === 'risks') {
               window.location.href = '/dashboard.html?screen=risks&buildId=' + encodeURIComponent(build.buildId);
+            }
+            else if (button.dataset.action === 'test-gaps') {
+              window.location.href = testGapsPageUrl(build.buildId);
             }
             else if (button.dataset.action === 'settings') openSettings(build);
           });
@@ -650,6 +669,45 @@
           if (stage && stage !== 'all') params.set('stage', stage);
           return '/dashboard.html?' + params.toString();
         }
+
+      function testGapsPageUrl(buildId) {
+        const params = new URLSearchParams({ screen: 'test-gaps' });
+        if (buildId) params.set('buildId', buildId);
+        return '/dashboard.html?' + params.toString();
+      }
+
+      async function loadTestGapsPage() {
+        const buildId = new URLSearchParams(window.location.search).get('buildId') || '';
+        main.setAttribute('aria-busy', 'true');
+        main.innerHTML = '<div class="loading-state" role="status">Loading historical test gaps…</div>';
+        try {
+          if (!buildId) {
+            const data = await CobraApi.getBuilds('limit=100');
+            const options = (data.builds || []).map((build) =>
+              '<option value="' + escapeHtml(build.buildId) + '">' + escapeHtml(build.repo) + ' · ' + escapeHtml(build.buildId) + '</option>'
+            ).join('');
+            main.innerHTML = '<section class="page-heading"><div><h1>Historical Test Gaps</h1>' +
+              '<p class="subtitle">Choose a build to inspect changed functions without matching historical coverage.</p></div></section>' +
+              (options
+                ? '<label class="field risk-build-select">App · Build<select id="testGapsBuildSelect"><option value="">Select a build</option>' + options + '</select></label>'
+                : '<div class="empty-state table-card">No builds are available to inspect.</div>');
+            const select = document.getElementById('testGapsBuildSelect');
+            if (select) select.addEventListener('change', () => {
+              if (select.value) window.location.href = testGapsPageUrl(select.value);
+            });
+            main.removeAttribute('aria-busy');
+            return;
+          }
+
+          const data = await CobraApi.getTestGaps(buildId);
+          main.innerHTML = CobraTestGapsView.render(data);
+          main.removeAttribute('aria-busy');
+        } catch (error) {
+          main.removeAttribute('aria-busy');
+          main.innerHTML = CobraTestGapsView.renderError(error.message);
+          document.getElementById('retryTestGaps').addEventListener('click', loadTestGapsPage);
+        }
+      }
 
       async function loadRisksPage() {
           const params = new URLSearchParams(window.location.search);
@@ -987,6 +1045,7 @@
       const currentPath = window.location.pathname;
       const isOptimizationScreen = currentPath === '/test-optimization' || new URLSearchParams(window.location.search).get('screen') === 'test-optimization';
       const isRiskScreen = new URLSearchParams(window.location.search).get('screen') === 'risks';
+      const isTestGapsScreen = new URLSearchParams(window.location.search).get('screen') === 'test-gaps';
       document.addEventListener('click', (event) => {
         const disabledLink = event.target.closest('.nav a[aria-disabled="true"]');
         if (disabledLink) event.preventDefault();
@@ -995,6 +1054,10 @@
         document.querySelector('.nav a[aria-current="page"]').removeAttribute('aria-current');
         document.getElementById('optimizationNavLink').setAttribute('aria-current', 'page');
         loadTestOptimizationPage();
+      } else if (isTestGapsScreen) {
+        document.querySelector('.nav a[aria-current="page"]').removeAttribute('aria-current');
+        document.getElementById('testGapsNavLink').setAttribute('aria-current', 'page');
+        loadTestGapsPage();
       } else if (isRiskScreen) {
         document.querySelector('.nav a[aria-current="page"]').removeAttribute('aria-current');
         document.getElementById('riskNavLink').setAttribute('aria-current', 'page');

@@ -45,6 +45,9 @@
     async getRisk(buildId, query) {
       return this.getJson('/risk/' + encodeURIComponent(buildId) + (query ? '?' + query : ''));
     },
+    async getTestGaps(buildId) {
+      return this.getJson('/test-gaps/' + encodeURIComponent(buildId));
+    },
     async getBuildStages(buildId) {
       return this.getJson('/builds/' + encodeURIComponent(buildId) + '/stages');
     },
