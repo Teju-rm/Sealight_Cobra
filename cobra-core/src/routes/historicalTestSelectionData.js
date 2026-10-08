@@ -1,4 +1,4 @@
-async function loadHistoricalCoverage(pool, buildId, build) {
+async function loadHistoricalCoverage(pool, buildId, build, changedFunctionStatuses) {
   const result = await pool.query(
     `SELECT cr.test_id, cr.file, cr.function, cr.build_id AS historical_build_id,
             historical.branch AS historical_branch,
@@ -14,13 +14,15 @@ async function loadHistoricalCoverage(pool, buildId, build) {
        ON cf.build_id = $1
       AND cf.file = cr.file
       AND cf.function = cr.function
-      AND cf.status <> 'deleted'
+      AND ${changedFunctionStatuses ? "cf.status = ANY($4)" : "cf.status <> 'deleted'"}
      LEFT JOIN test_executions te ON te.id = cr.execution_id
      WHERE cr.build_id <> $1
        AND historical.repo = $2
        AND historical.created_at < $3
        AND cr.hits > 0`,
-    [buildId, build.repo, build.created_at],
+    changedFunctionStatuses
+      ? [buildId, build.repo, build.created_at, changedFunctionStatuses]
+      : [buildId, build.repo, build.created_at],
   );
 
   const sameBranchRows = result.rows.filter(

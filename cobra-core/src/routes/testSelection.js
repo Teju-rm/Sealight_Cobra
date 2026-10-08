@@ -144,6 +144,7 @@ module.exports = function createTestSelectionRouter(pool) {
       );
       const changedFunctions = new Map();
       for (const row of changedResult.rows) {
+        if (!["new", "modified", "deleted"].includes(row.status)) continue;
         const key = functionKey(row.file, row.function);
         const current = changedFunctions.get(key);
         if (current) {
@@ -174,7 +175,7 @@ module.exports = function createTestSelectionRouter(pool) {
       }
 
       const { rows: historicalRows, branchStrategy } =
-        await loadHistoricalCoverage(pool, buildId, build);
+        await loadHistoricalCoverage(pool, buildId, build, ["new", "modified"]);
       const coveredFunctionKeys = new Set(
         historicalRows.map((row) => functionKey(row.file, row.function)),
       );

@@ -29,9 +29,12 @@ function createApp({ build = targetBuild, changes = changedFunctions, history = 
         return { rows: changes };
       }
       if (sql.includes("FROM coverage_runs cr")) {
+        const changedFunctionStatuses = values[3];
         const changedKeys = new Set(
           changes
-            .filter((change) => change.status !== "deleted")
+            .filter((change) => changedFunctionStatuses
+              ? changedFunctionStatuses.includes(change.status)
+              : change.status !== "deleted")
             .map((change) => JSON.stringify([change.file, change.function])),
         );
         return {
@@ -308,6 +311,119 @@ test("GET /test-gaps excludes deleted changes and counts them separately", async
   });
 });
 
+test("GET /test-gaps reports a modified function without historical coverage as a gap", async () => {
+  const { app } = createApp({
+    changes: [{
+      file: "routes/new.js",
+      function: "newHandler",
+      status: "modified",
+      start_line: 10,
+      end_line: 18,
+      author: "Ada Example",
+    }],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body.gaps.map(({ file, function: functionName, status, reason }) => ({
+    file, function: functionName, status, reason,
+  })), [{
+    file: "routes/new.js",
+    function: "newHandler",
+    status: "modified",
+    reason: "no_historical_coverage",
+  }]);
+  assert.deepEqual(response.body.summary, {
+    changedFunctions: 1,
+    coveredChangedFunctions: 0,
+    gaps: 1,
+    deletedFunctions: 0,
+  });
+});
+
+test("GET /test-gaps counts a modified function with historical coverage as covered", async () => {
+  const { app } = createApp({
+    changes: [{
+      file: "routes/contact.js",
+      function: "submitContactHandler",
+      status: "modified",
+    }],
+    history: [historicalRow()],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.deepEqual(response.body.gaps, []);
+  assert.deepEqual(response.body.summary, {
+    changedFunctions: 1,
+    coveredChangedFunctions: 1,
+    gaps: 0,
+    deletedFunctions: 0,
+  });
+});
+
+test("GET /test-gaps excludes unchanged functions from gap and coverage counts", async () => {
+  const { app, queries } = createApp({
+    changes: [{
+      file: "routes/unchanged.js",
+      function: "stableHandler",
+      status: "unchanged",
+    }],
+    history: [historicalRow({
+      file: "routes/unchanged.js",
+      function: "stableHandler",
+    })],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body.gaps, []);
+  assert.deepEqual(response.body.summary, {
+    changedFunctions: 0,
+    coveredChangedFunctions: 0,
+    gaps: 0,
+    deletedFunctions: 0,
+  });
+  const historyQuery = queries.find(({ sql }) => sql.includes("FROM coverage_runs cr"));
+  assert.match(historyQuery.sql, /cf\.status = ANY\(\$4\)/);
+  assert.deepEqual(historyQuery.values, [
+    "target-build",
+    "travel-trust-insurance",
+    targetBuild.created_at,
+    ["new", "modified"],
+  ]);
+});
+
+test("unchanged-function coverage does not prevent TGA cross-branch fallback", async () => {
+  const { app } = createApp({
+    changes: [
+      { file: "routes/contact.js", function: "submitContactHandler", status: "modified" },
+      { file: "routes/stable.js", function: "stableHandler", status: "unchanged" },
+    ],
+    history: [
+      historicalRow({
+        file: "routes/contact.js",
+        function: "submitContactHandler",
+        historical_branch: "release",
+      }),
+      historicalRow({
+        file: "routes/stable.js",
+        function: "stableHandler",
+        historical_branch: "main",
+      }),
+    ],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.equal(response.body.branchStrategy, "cross_branch_fallback");
+  assert.deepEqual(response.body.gaps, []);
+  assert.deepEqual(response.body.summary, {
+    changedFunctions: 1,
+    coveredChangedFunctions: 1,
+    gaps: 0,
+    deletedFunctions: 0,
+  });
+});
+
 test("GET /test-gaps uses the shared historical matching query and branch fallback", async () => {
   const { app, queries } = createApp({
     changes: [changedFunctions[0]],
@@ -324,6 +440,7 @@ test("GET /test-gaps uses the shared historical matching query and branch fallba
     "target-build",
     "travel-trust-insurance",
     targetBuild.created_at,
+    ["new", "modified"],
   ]);
   assert.equal(response.body.branchStrategy, "cross_branch_fallback");
   assert.deepEqual(response.body.gaps, []);
