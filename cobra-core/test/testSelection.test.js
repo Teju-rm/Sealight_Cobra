@@ -8,6 +8,7 @@ const targetBuild = {
   build_id: "target-build",
   repo: "travel-trust-insurance",
   branch: "main",
+  language: "javascript",
   created_at: "2026-10-07T12:00:00.000Z",
 };
 
@@ -224,4 +225,218 @@ test("returns 404 when the target build does not exist", async () => {
   assert.equal(response.status, 404);
   assert.deepEqual(response.body, { error: "Build not found" });
   assert.equal(queries.length, 1);
+});
+
+test("GET /test-gaps reports uncovered non-deleted changes and summary metadata", async () => {
+  const { app } = createApp({
+    changes: [
+      {
+        file: "routes/contact.js",
+        function: "submitContactHandler",
+        status: "modified",
+        start_line: 10,
+        end_line: 18,
+        author: "Ada Example",
+      },
+      {
+        file: "routes/claim.js",
+        function: "submitClaimHandler",
+        status: "new",
+        start_line: 22,
+        end_line: 29,
+        author: null,
+      },
+    ],
+    history: [historicalRow()],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    buildId: "target-build",
+    repo: "travel-trust-insurance",
+    branch: "main",
+    language: "javascript",
+    branchStrategy: "same_branch",
+    gaps: [{
+      file: "routes/claim.js",
+      function: "submitClaimHandler",
+      status: "new",
+      startLine: 22,
+      endLine: 29,
+      author: null,
+      reason: "no_historical_coverage",
+    }],
+    summary: {
+      changedFunctions: 2,
+      coveredChangedFunctions: 1,
+      gaps: 1,
+      deletedFunctions: 0,
+    },
+  });
+});
+
+test("GET /test-gaps treats zero-hit historical rows as uncovered", async () => {
+  const { app } = createApp({
+    changes: [changedFunctions[0]],
+    history: [historicalRow({ hits: 0 })],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.deepEqual(response.body.gaps.map(({ function: functionName }) => functionName), [
+    "submitContactHandler",
+  ]);
+  assert.equal(response.body.summary.coveredChangedFunctions, 0);
+});
+
+test("GET /test-gaps excludes deleted changes and counts them separately", async () => {
+  const { app } = createApp({
+    changes: [
+      { file: "routes/old.js", function: "removed", status: "deleted" },
+      changedFunctions[0],
+    ],
+    history: [historicalRow()],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.deepEqual(response.body.gaps, []);
+  assert.deepEqual(response.body.summary, {
+    changedFunctions: 2,
+    coveredChangedFunctions: 1,
+    gaps: 0,
+    deletedFunctions: 1,
+  });
+});
+
+test("GET /test-gaps uses the shared historical matching query and branch fallback", async () => {
+  const { app, queries } = createApp({
+    changes: [changedFunctions[0]],
+    history: [historicalRow({ historical_branch: "release" })],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  const historyQuery = queries.find(({ sql }) => sql.includes("FROM coverage_runs cr"));
+  assert.match(historyQuery.sql, /historical\.repo = \$2/);
+  assert.match(historyQuery.sql, /historical\.created_at < \$3/);
+  assert.match(historyQuery.sql, /cr\.build_id <> \$1/);
+  assert.match(historyQuery.sql, /cr\.hits > 0/);
+  assert.deepEqual(historyQuery.values, [
+    "target-build",
+    "travel-trust-insurance",
+    targetBuild.created_at,
+  ]);
+  assert.equal(response.body.branchStrategy, "cross_branch_fallback");
+  assert.deepEqual(response.body.gaps, []);
+});
+
+test("GET /test-gaps ignores other repositories, later builds, and target-build coverage", async () => {
+  const { app } = createApp({
+    changes: [changedFunctions[0]],
+    history: [
+      historicalRow({ historical_repo: "different-repo" }),
+      historicalRow({ historical_created_at: "2026-10-08T12:00:00.000Z" }),
+      historicalRow({ historical_build_id: "target-build" }),
+    ],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.summary.coveredChangedFunctions, 0);
+  assert.equal(response.body.gaps.length, 1);
+});
+
+test("GET /test-gaps requires exact file and function matches for historical coverage", async () => {
+  const { app } = createApp({
+    changes: [{
+      file: "routes/claim.js",
+      function: "submitClaimHandler",
+      status: "modified",
+    }],
+    history: [
+      historicalRow({
+        file: "routes/other.js",
+        function: "submitClaimHandler",
+      }),
+      historicalRow({
+        file: "routes/claim.js",
+        function: "differentFunction",
+      }),
+    ],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.summary.coveredChangedFunctions, 0);
+  assert.equal(response.body.summary.gaps, 1);
+  assert.equal(response.body.gaps.length, 1);
+  assert.equal(response.body.gaps[0].file, "routes/claim.js");
+  assert.equal(response.body.gaps[0].function, "submitClaimHandler");
+  assert.equal(response.body.gaps[0].reason, "no_historical_coverage");
+});
+
+test("GET /test-gaps prefers same-branch history when any same-branch rows exist", async () => {
+  const { app } = createApp({
+    changes: [
+      changedFunctions[0],
+      { file: "routes/claim.js", function: "submitClaimHandler", status: "modified" },
+    ],
+    history: [
+      historicalRow({ test_id: "same branch", historical_branch: "main" }),
+      historicalRow({
+        test_id: "other branch",
+        file: "routes/claim.js",
+        function: "submitClaimHandler",
+        historical_branch: "release",
+      }),
+    ],
+  });
+  const response = await request(app).get("/test-gaps/target-build");
+
+  assert.equal(response.body.branchStrategy, "same_branch");
+  assert.deepEqual(response.body.gaps, [{
+    file: "routes/claim.js",
+    function: "submitClaimHandler",
+    status: "modified",
+    startLine: null,
+    endLine: null,
+    author: null,
+    reason: "no_historical_coverage",
+  }]);
+});
+
+test("GET /test-gaps returns 404 when the target build does not exist", async () => {
+  const { app, queries } = createApp({ build: null });
+  const response = await request(app).get("/test-gaps/missing");
+
+  assert.equal(response.status, 404);
+  assert.deepEqual(response.body, { error: "Build not found" });
+  assert.equal(queries.length, 1);
+});
+
+test("GET /test-selection/:buildId retains its existing response contract", async () => {
+  const { app } = createApp({ history: [historicalRow()] });
+  const response = await request(app).get("/test-selection/target-build");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(Object.keys(response.body), [
+    "buildId",
+    "repo",
+    "branch",
+    "branchStrategy",
+    "selectedTests",
+    "uncoveredFunctions",
+    "summary",
+  ]);
+  assert.deepEqual(Object.keys(response.body.selectedTests[0]), [
+    "testId",
+    "coveredFunctions",
+    "historicalBuilds",
+    "executions",
+  ]);
+  assert.deepEqual(Object.keys(response.body.summary), [
+    "changedFunctions",
+    "selectedTests",
+    "coveredFunctions",
+    "uncoveredFunctions",
+  ]);
 });

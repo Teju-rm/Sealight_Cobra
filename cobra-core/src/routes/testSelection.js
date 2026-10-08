@@ -121,5 +121,100 @@ module.exports = function createTestSelectionRouter(pool) {
     }
   });
 
+  router.get("/test-gaps/:buildId", async (req, res) => {
+    const { buildId } = req.params;
+    try {
+      const buildResult = await pool.query(
+        `SELECT build_id, repo, branch, language, created_at
+         FROM builds
+         WHERE build_id = $1`,
+        [buildId],
+      );
+      if (buildResult.rows.length === 0) {
+        return res.status(404).json({ error: "Build not found" });
+      }
+
+      const build = buildResult.rows[0];
+      const changedResult = await pool.query(
+        `SELECT file, function, status, start_line, end_line, author
+         FROM changed_functions
+         WHERE build_id = $1
+         ORDER BY file, function`,
+        [buildId],
+      );
+      const changedFunctions = new Map();
+      for (const row of changedResult.rows) {
+        const key = functionKey(row.file, row.function);
+        const current = changedFunctions.get(key);
+        if (current) {
+          if (current.deleted && row.status !== "deleted") {
+            Object.assign(current, {
+              file: row.file,
+              function: row.function,
+              status: row.status,
+              startLine: row.start_line ?? null,
+              endLine: row.end_line ?? null,
+              author: row.author ?? null,
+              deleted: false,
+            });
+          } else {
+            current.deleted = current.deleted && row.status === "deleted";
+          }
+        } else {
+          changedFunctions.set(key, {
+            file: row.file,
+            function: row.function,
+            status: row.status,
+            startLine: row.start_line ?? null,
+            endLine: row.end_line ?? null,
+            author: row.author ?? null,
+            deleted: row.status === "deleted",
+          });
+        }
+      }
+
+      const { rows: historicalRows, branchStrategy } =
+        await loadHistoricalCoverage(pool, buildId, build);
+      const coveredFunctionKeys = new Set(
+        historicalRows.map((row) => functionKey(row.file, row.function)),
+      );
+      const gaps = [...changedFunctions.entries()]
+        .filter(([key, changedFunction]) =>
+          !changedFunction.deleted && !coveredFunctionKeys.has(key))
+        .map(([, changedFunction]) => ({
+          file: changedFunction.file,
+          function: changedFunction.function,
+          status: changedFunction.status,
+          startLine: changedFunction.startLine,
+          endLine: changedFunction.endLine,
+          author: changedFunction.author,
+          reason: "no_historical_coverage",
+        }));
+      const deletedFunctions = [...changedFunctions.values()]
+        .filter((changedFunction) => changedFunction.deleted).length;
+
+      res.json({
+        buildId: build.build_id,
+        repo: build.repo,
+        branch: build.branch || null,
+        language: build.language,
+        branchStrategy,
+        gaps,
+        summary: {
+          changedFunctions: changedFunctions.size,
+          coveredChangedFunctions: [...changedFunctions.entries()].filter(
+            ([key, changedFunction]) =>
+              !changedFunction.deleted && coveredFunctionKeys.has(key),
+          ).length,
+          gaps: gaps.length,
+          deletedFunctions,
+        },
+      });
+    } catch (err) {
+      console.error(`GET /test-gaps/${buildId} failed:`, err);
+      res.status(500).json({ error: "Failed to analyze historical test gaps" });
+    }
+  });
+
   return router;
 };
